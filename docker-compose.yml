@@ -1,0 +1,12 @@
+services:
+  manul-bot:
+    image: python:3.11-slim
+    container_name: manul_garage_bot
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file: .env
+    restart: always
+    command: >
+      sh -c "pip install --no-cache-dir google-genai apify-client python-dotenv &&
+             tail -f /dev/null"
