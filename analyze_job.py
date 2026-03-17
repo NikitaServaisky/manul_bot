@@ -1,63 +1,48 @@
 import os
-import base64
-import requests
-import json
+from google import genai
 from dotenv import load_dotenv
+from PIL import Image
 
+# טעינת הגדרות
 load_dotenv()
-api_key = os.getenv("GROQ_API_KEY")
 
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+# אתחול הלקוח החדש (Client)
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def analyze_and_post(image_path):
-    if not os.path.exists(image_path):
-        return f"Error: The file {image_path} was not found!"
+def analyze_mechanic_job(image_path):
+    try:
+        # טעינת התמונה
+        img = Image.open(image_path)
+        
+        prompt = """
+        אתה עוזר טכני מומחה למוסך 'מנול גארז'. 
+        תסתכל על התמונה המצורפת ונתח אותה עבור הלקוח:
+        1. מה רואים בתמונה? (חלק פגום, שלב בעבודה, רכב מסוים)
+        2. מה לדעתך הבעיה הטכנית כאן?
+        3. תכתוב פוסט קצר ושיווקי לטלגרם שמסביר על התיקון הזה.
+        
+        תענה בעברית מקצועית וקלילה.
+        """
+        
+        # שליחה למודל בסינטקס החדש
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[prompt, img]
+        )
+        
+        return response.text
 
-    base64_image = encode_image(image_path)
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    except Exception as e:
+        return f"אופס, משהו השתבש: {e}"
+
+if __name__ == "__main__":
+    image_file = "job.jpg"
     
-    # שלב 1: ניתוח התמונה
-    data = {
-        "model":"llama3.2-11b-vision-previwe" ,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What car part is this and what is wrong with it?"},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                ]
-            }
-        ]
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    res_json = response.json()
-
-    if 'choices' not in res_json:
-        print("--- API ERROR IN VISION STAGE ---")
-        print(json.dumps(res_json, indent=2))
-        return "Failed at Vision stage."
-
-    analysis = res_json['choices'][0]['message']['content']
-    print(f"Technical Analysis: {analysis}")
-
-    # שלב 2: כתיבת הפוסט
-    post_data = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "user", "content": f"Write a funny Facebook post in Hebrew for 'Manul Garage' about this: {analysis}"}
-        ]
-    }
-    
-    post_res = requests.post(url, headers=headers, json=post_data).json()
-    return post_res['choices'][0]['message']['content']
-
-try:
-    final_post = analyze_and_post("job.jpg")
-    print("\n--- RESULT ---")
-    print(final_post)
-except Exception as e:
-    print(f"General Error: {e}")
+    if os.path.exists(image_file):
+        print("מנתח את התמונה עם ה-SDK החדש...")
+        result = analyze_mechanic_job(image_file)
+        print("-" * 30)
+        print(result)
+        print("-" * 30)
+    else:
+        print(f"לא מצאתי את {image_file}")
