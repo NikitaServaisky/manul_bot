@@ -1,32 +1,31 @@
 import os
 import requests
+import re
 from groq import Groq
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Initialize Groq for AI analysis
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+try:
+    groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+except Exception as e:
+    print(f"Failed to initialize Groq: {e}")
 
-# Fake data for testing (3 posts: 1 VAG, 1 General, 1 Junk)
-MOCK_POSTS = [
-    {
-        "text": "היי חברים, יש לי אאודי A3 שנת 2018 ויש רעש מוזר מהגיר DSG. מישהו מכיר מוסך מומחה באזור הדרום?",
-        "url": "https://facebook.com/groups/fake_post_1"
-    },
-    {
-        "text": "למכירה שולחן סלון בבאר שבע, במצב מצוין.",
-        "url": "https://facebook.com/groups/fake_post_2"
-    },
-    {
-        "text": "צריך המלצה למוסך לטיפול 15,000 לסיאט לאון שלי, מעדיף מישהו שמבין ב-VAG.",
-        "url": "https://facebook.com/groups/fake_post_3"
-    }
-]
+def load_list_from_file(file_path):
+    if not os.path.exists(file_path):
+        return []
+    with open(file_path, "r", encoding="utf-8") as f:
+        return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
+def escape_markdown(text):
+    """Escapes ALL special characters for Telegram MarkdownV2."""
+    if not text:
+        return ""
+    # רשימת התווים שחובה לברוח מהם ב-MarkdownV2
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', str(text))
 
 def send_telegram_message(message):
-    """Sends notification to Telegram."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -34,66 +33,72 @@ def send_telegram_message(message):
     payload = {
         "chat_id": chat_id,
         "text": message,
-        "parse_mode": "Markdown"
+        "parse_mode": "MarkdownV2"
     }
     
     try:
         response = requests.post(url, json=payload)
-        return response.json()
+        result = response.json()
+        if result.get("ok"):
+            print("✅ Message sent successfully with MarkdownV2")
+        else:
+            print(f"❌ TELEGRAM ERROR: {result.get('description')}")
+            # Fallback: אם נכשל, שלח טקסט נקי בלי עיצוב בכלל
+            payload.pop("parse_mode")
+            requests.post(url, json=payload)
+        return result
     except Exception as e:
-        print(f"Telegram Error: {e}")
+        print(f"Error: {e}")
 
-def analyze_post_with_ai(post_text):
-    """Aggressive Few-Shot Prompting to force VAG detection."""
-    prompt = f"""
-    You are a specialized lead filter for a car garage.
+# --- Mock Data ---
+MOCK_POSTS = [
+    {"text": "היי חברים, יש לי אאודי A3 שנת 2018 ויש רעש מוזר מהגיר DSG. מישהו מכיר מוסך מומחה באזור הדרום?", "id": "HEB_VAG", "url": "https://fb.com/1"},
+    {"text": "У меня проблема с коробкой передач в Шкоде. Нужен механик.", "id": "RUS_VAG", "url": "https://fb.com/2"},
+    {"text": "عندي مشكلة في جير الأودي. حد بيعرف كراج متخصص؟", "id": "ARB_VAG", "url": "https://fb.com/3"},
+    {"text": "My Volkswagen Golf has a check engine light on.", "id": "ENG_VAG", "url": "https://fb.com/4"}
+]
+
+def analyze_post_with_ai(post_text, keywords):
+    found_keywords = [kw for kw in keywords if re.search(rf"\b{kw}\b", post_text, re.IGNORECASE)]
+    if not found_keywords:
+        return "Relevant: No\nReason: No matching keywords found."
+
+    prompt = f"Is this person looking for a mechanic? POST: '{post_text}'. Return only: Relevant: [Yes/No]\nReason: [Short English]"
     
-    TARGET BRANDS: Audi, VW, Volkswagen, Seat, Skoda.
-    TARGET TOPICS: Repairs, DSG, TSI, Mechanic recommendations, noises, engine light.
-
-    EXAMPLES:
-    1. "Looking for Audi mechanic" -> Relevant: Yes
-    2. "My Skoda has a DSG noise" -> Relevant: Yes
-    3. "Selling my VW Golf" -> Relevant: No (It's a sale)
-    4. "Recommendation for Seat garage" -> Relevant: Yes
-    5. "Looking for a table" -> Relevant: No
-
-    USER POST: "{post_text}"
-
-    Does this person need a garage or repair for a VAG car?
-    Answer ONLY in this format:
-    Relevant: [Yes/No]
-    Reason: [Why]
-    """
     try:
         completion = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a professional sales lead identifier. Be decisive."},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama3-70b-8192",
-            temperature=0.1, # Extremely focused
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            temperature=0.1,
         )
         return completion.choices[0].message.content
     except Exception as e:
         return f"AI Error: {e}"
 
 def run_debug_test():
-    """Main test loop using mock data instead of Apify."""
-    print("🚀 Starting Debug Test with Mock Data...")
+    print("🚀 Starting Multilingual Debug Test...")
+    keywords = load_list_from_file("keywords.txt")
     
     for post in MOCK_POSTS:
-        print(f"\nChecking post: {post['text'][:40]}...")
+        print(f"\n--- Checking [{post['id']}] ---")
+        analysis = analyze_post_with_ai(post['text'], keywords)
         
-        # Analyze with AI (this still uses Groq tokens, but they are very cheap/free)
-        analysis = analyze_post_with_ai(post['text'])
-        
-        if "Relevant: Yes" in analysis:
-            print("✅ AI marked as RELEVANT. Sending to Telegram...")
-            msg = f"🧪 *DEBUG LEAD FOUND!*\n\n*Post:* {post['text']}\n\n*Analysis:* {analysis}\n\n*URL:* {post['url']}"
+        if "Yes" in analysis:
+            # כאן קורה הקסם - אנחנו בורחים מכל הטקסטים
+            clean_text = escape_markdown(post['text'][:200])
+            clean_analysis = escape_markdown(analysis)
+            clean_url = escape_markdown(post['url'])
+            
+            # בניית הודעה בפורמט MarkdownV2 תקין
+            msg = (
+                f"🎯 *NEW LEAD FOUND\\!*"
+                f"\n\n*Post:* {clean_text}"
+                f"\n\n*Analysis:* {clean_analysis}"
+                f"\n\n[Link to Post]({clean_url})"
+            )
             send_telegram_message(msg)
         else:
-            print("❌ AI marked as NOT RELEVANT.")
+            print(f"❌ Not Relevant: {analysis}")
 
 if __name__ == "__main__":
     run_debug_test()
