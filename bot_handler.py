@@ -1,0 +1,104 @@
+import os
+import sqlite3
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, ContextTypes, MessageHandler, filters
+from dotenv import load_dotenv
+
+# Importing tools from your services file
+from services import generate_marketing_post, init_all_dbs
+
+load_dotenv()
+
+# Log configuration for YOUR computer (English)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Security: Only the mechanic's chat ID can trigger the AI
+AUTHORIZED_USER_ID = int(os.getenv("TELEGRAM_CHAT_ID", "0"))
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles button clicks. 
+    Interface: Russian | Logs: English
+    """
+    query = update.callback_query
+    # Russian "toast" notification
+    await query.answer(text="Обработка...") 
+    data = query.data 
+    
+    if data.startswith("accept_"):
+        post_id = data.split("_")[1]
+        try:
+            with sqlite3.connect("manul_leads.db") as conn:
+                conn.execute("UPDATE leads SET status = ? WHERE post_url LIKE ?", ("confirmed", f"%{post_id}%"))
+            
+            # Russian status update in Telegram
+            new_text = f"{query.message.text}\n\n✅ **Статус: Подтверждено וсохранено!**"
+            await query.edit_message_text(text=new_text, parse_mode='MarkdownV2')
+            
+            # English log for your terminal
+            logging.info(f"Lead {post_id} confirmed in database.")
+            
+        except Exception as e:
+            logging.error(f"Database error: {e}")
+            await query.edit_message_text(text=f"{query.message.text}\n\n⚠️ **Ошибка базы данных**")
+    
+    elif data == "ignore":
+        # Russian ignore status
+        await query.edit_message_text(text=f"{query.message.text}\n\n❌ **Статус: Проигнорировано.**", parse_mode='MarkdownV2')
+        logging.info("Lead was ignored by the user.")
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles images for Facebook marketing.
+    Interface: Russian | Output: Hebrew | Logs: English
+    """
+    # Security Check
+    if update.message.from_user.id != AUTHORIZED_USER_ID:
+        await update.message.reply_text("⛔ Доступ запрещен.")
+        return
+
+    image_path = f"temp_{update.message.from_user.id}.jpg"
+    try:
+        photo_file = await update.message.photo[-1].get_file()
+        await photo_file.download_to_drive(image_path)
+        
+        # Russian progress message for the mechanic
+        await update.message.reply_text("🛠️ Генерирую рекламный пост на иврите... Пожалуйста, подождите.")
+        
+        # This function (in services.py) generates HEBREW text
+        marketing_content = generate_marketing_post(image_path)
+        
+        # Save to database (Status and logging in English)
+        with sqlite3.connect("manul_leads.db") as conn:
+            conn.execute("INSERT INTO marketing_posts (image_path, generated_content) VALUES (?, ?)", 
+                         (image_path, marketing_content))
+        
+        # Sending the Hebrew post to the mechanic so he can copy it to Facebook
+        await update.message.reply_text(f"✨ **Предложение для поста (Иврит):**\n\n{marketing_content}")
+        logging.info("Marketing post in Hebrew generated successfully.")
+        
+    except Exception as e:
+        logging.error(f"Error handling marketing photo: {e}")
+        await update.message.reply_text("❌ Произошла ошибка при создании поста.")
+    finally:
+        # Cleanup
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
+if __name__ == "__main__":
+    init_all_dbs() # Ensure DB structure is ready
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    
+    if not token:
+        logging.critical("TELEGRAM_BOT_TOKEN missing!")
+        exit(1)
+
+    app = ApplicationBuilder().token(token).build()
+    
+    app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    
+    # Terminal message for YOU (English)
+    print("🤖 Bot Handler is active. Listening for Marketing Photos and Lead interactions...")
+    app.run_polling()

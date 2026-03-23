@@ -1,5 +1,0 @@
-google-genai
-python-dotenv
-Pillow
-python-telegram-bot
-apify-client
