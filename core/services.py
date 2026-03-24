@@ -2,10 +2,20 @@ import os
 import sqlite3
 import requests
 import base64
+import urllib.parse
+from PIL import Image
+from dotenv import load_dotenv
+from pathlib import Path
 from groq import Groq
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from google import genai
+from google.genai import types
+
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def init_all_dbs():
     """Initializes all necessary tables with CRM-ready fields."""
@@ -72,10 +82,10 @@ def save_lead(content, url, db_name="manul_leads.db", status="new"):
                      (content[:500], url, status))
 
 def generate_marketing_post(image_path):
-    """Vision-based marketing post generation in HEBREW."""
+    """Vision-based marketing post generation in HEBREW using Gemini 2.5 Flash."""
     try:
-        with open(image_path, "rb") as img:
-            base64_image = base64.b64encode(img.read()).decode('utf-8')
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        img = Image.open(image_path)
         
         prompt = """
         You are a social media manager for a car garage (VAG specialists).
@@ -84,18 +94,15 @@ def generate_marketing_post(image_path):
         Use emojis.
         """
         
-        completion = groq_client.chat.completions.create(
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                ]
-            }],
-            model="llama-3.2-11b-vision-preview",
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[prompt, img]
         )
-        return completion.choices[0].message.content
+        
+        return response.text
+    
     except Exception as e:
+        print(f"Detailed Error: {e}")
         return f"Vision Error: {e}"
 
 def send_telegram_lead(text, analysis, post_url, is_debug=False):
@@ -115,3 +122,9 @@ def send_telegram_lead(text, analysis, post_url, is_debug=False):
         "reply_markup": InlineKeyboardMarkup(keyboard).to_dict()
     }
     return requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload)
+
+def create_facebook_deep_link(post_text):
+    """Generate a Facebook sharing link with the post content."""
+    page_id = "MANUL_GARAGE_PAGE_ID"
+    encoded_text = urllib.parse.quote(post_text)
+    return f"https://www.facebook.com/sharer/sharer.php?u=https://facebook.com/{page_id}&quote={encoded_text}"

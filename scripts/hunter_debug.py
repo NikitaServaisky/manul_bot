@@ -1,5 +1,5 @@
-from utils import load_list, escape_md
-from services import analyze_with_ai, send_telegram_lead, save_lead
+from core.utils import load_list, escape_md
+from core.services import analyze_with_ai, send_telegram_lead, save_lead
 from dotenv import load_dotenv
 
 load_dotenv()

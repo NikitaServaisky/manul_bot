@@ -2,11 +2,12 @@ import os
 import sqlite3
 import logging
 from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from dotenv import load_dotenv
 
 # Importing tools from your services file
-from services import generate_marketing_post, init_all_dbs
+from core.services import generate_marketing_post, init_all_dbs, create_facebook_deep_link
 
 load_dotenv()
 
@@ -60,6 +61,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     image_path = f"temp_{update.message.from_user.id}.jpg"
     try:
+        # Download image
         photo_file = await update.message.photo[-1].get_file()
         await photo_file.download_to_drive(image_path)
         
@@ -68,14 +70,27 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # This function (in services.py) generates HEBREW text
         marketing_content = generate_marketing_post(image_path)
+
+        # Create facebook deep link
+        fb_url = create_facebook_deep_link(marketing_content)
         
         # Save to database (Status and logging in English)
         with sqlite3.connect("manul_leads.db") as conn:
             conn.execute("INSERT INTO marketing_posts (image_path, generated_content) VALUES (?, ?)", 
                          (image_path, marketing_content))
+
+        # Create key board
+        keyboard = [
+            [InlineKeyboardButton("🚀 Опубликовать (Facebook)", url=fb_url)],
+            [InlineKeyboardButton("✍️ Редактировать", callback_data="edit_post")],
+            [InlineKeyboardButton("❌ Отменить", callback_data="ignore")]
+        ]
         
         # Sending the Hebrew post to the mechanic so he can copy it to Facebook
-        await update.message.reply_text(f"✨ **Предложение для поста (Иврит):**\n\n{marketing_content}")
+        await update.message.reply_text(
+            f"✨ **Предложение для поста (Иврит):**\n\n{marketing_content}",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
         logging.info("Marketing post in Hebrew generated successfully.")
         
     except Exception as e:
