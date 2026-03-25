@@ -19,6 +19,9 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def init_all_dbs():
     """Initializes all necessary tables with CRM-ready fields."""
+    # Create uplods directory
+    Path("uploads").mkdir(exist_ok=True)
+
     with sqlite3.connect("manul_leads.db") as conn:
         # Leads table - Advanced for CRM
         conn.execute("""

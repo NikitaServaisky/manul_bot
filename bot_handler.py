@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import logging
+import time
 from telegram import Update
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, ContextTypes, MessageHandler, filters
@@ -43,6 +44,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logging.error(f"Database error: {e}")
             await query.edit_message_text(text=f"{query.message.text}\n\n⚠️ **Ошибка базы данных**")
+
+    elif data == "edit_post":
+        await query.message.replay_text("✍️ Напишите, что именно вы хотите изменить в тексте (на русском), и я переделаю пост.")
+        # "ConversationHandler" in the next time write here
     
     elif data == "ignore":
         # Russian ignore status
@@ -58,8 +63,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != AUTHORIZED_USER_ID:
         await update.message.reply_text("⛔ Доступ запрещен.")
         return
+    
+    # Create special file for upload
+    timestamp = int(time.time())
+    file_name = f"marketing_{update.message.from_user.id}_{timestamp}.jpg"
+    image_path = os.path.join("uploads", file_name)
 
-    image_path = f"temp_{update.message.from_user.id}.jpg"
     try:
         # Download image
         photo_file = await update.message.photo[-1].get_file()
@@ -96,10 +105,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(f"Error handling marketing photo: {e}")
         await update.message.reply_text("❌ Произошла ошибка при создании поста.")
-    finally:
-        # Cleanup
-        if os.path.exists(image_path):
-            os.remove(image_path)
 
 if __name__ == "__main__":
     init_all_dbs() # Ensure DB structure is ready
