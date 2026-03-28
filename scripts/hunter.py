@@ -1,37 +1,37 @@
-import os
 import random
 import logging
-from apify_client import ApifyClient
-from core.utils import load_list, escape_md
-from core.services import analyze_with_ai, send_telegram_lead, save_lead
-from dotenv import load_dotenv
+from core.utils import load_list
+from services.scrapper_service import get_facebook_posts
+from services.lead_service import check_and_save_lead
 
-load_dotenv()
+# Configure logging to display only the message
 logging.basicConfig(level=logging.INFO, format='%(message)s')
-client = ApifyClient(os.getenv("APIFY_TOKEN"))
 
-def fetch_and_filter_leads():
-    groups = load_list("groups.txt")
-    keywords = load_list("keywords.txt")
+def run_hunt():
+    """Main execution function for the lead hunting process."""
     
-    selected_groups = random.sample(groups, min(3, len(groups)))
-    logging.info(f"🚀 Real Hunt Started: {selected_groups}")
+    # 1. Prepare input: Load target groups from file
+    groups = load_list("groups.txt")
+    if not groups: 
+        logging.error("No groups found in groups.txt")
+        return
+        
+    # Select a random sample of groups to avoid repetitive scanning
+    selected = random.sample(groups, min(3, len(groups)))
 
-    try:
-        run = client.actor("apify/facebook-posts-scraper").call(run_input={"startUrls": [{"url": u} for u in selected_groups], "resultsLimit": 5})
+    # 2. Fetch raw data: Get posts via the Scrapper Service (Apify)
+    logging.info(f"🚀 Starting hunt in: {selected}")
+    posts = get_facebook_posts(selected)
 
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
-            text, url = item.get("text"), item.get("url", "No URL")
-
-            if text:
-                analysis = analyze_with_ai(text, keywords, lang="Russian")
-                if "Yes" in analysis:
-                    save_lead(text, url)
-                    send_telegram_lead(escape_md(text[:200]), escape_md(analysis), url)
-                    logging.info(f"✅ Lead sent: {url}")
-
-    except Exception as e:
-        logging.error(f"Hunter Error: {e}")
+    # 3. Process data: Filter and save relevant leads via Lead Service
+    for post in posts:
+        text = post.get("text")
+        url = post.get("url", "No URL")
+        
+        if text and url != "No URL":
+            # check_and_save_lead handles deduplication, AI analysis, and DB storage
+            if check_and_save_lead(text, url):
+                logging.info(f"🎯 Lead Captured: {url}")
 
 if __name__ == "__main__":
-    fetch_and_filter_leads()
+    run_hunt()
