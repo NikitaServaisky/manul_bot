@@ -1,7 +1,7 @@
 import random
 import logging
 from core.utils import load_list
-from services.scrapper_service import get_facebook_posts
+from services.scrapper_services import get_facebook_posts
 from services.lead_service import check_and_save_lead
 
 # Configure logging to display only the message

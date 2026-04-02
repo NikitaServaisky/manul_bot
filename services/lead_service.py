@@ -33,7 +33,9 @@ def check_and_save_lead(text, url):
             return False
             
         # 2. AI Relevance analysis
-        if "Yes" in analyze_lead_relevance(text):
+        ai_response = analyze_lead_relevance(text)
+        
+        if "YES" in ai_response:
             # 3. Save to database
             conn.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
             conn.execute("INSERT INTO leads (post_content, post_url) VALUES (?, ?)", (text, url))

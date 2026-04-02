@@ -13,8 +13,8 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
-            full_name TEXT,
-            role TEXT DEFAULT 'mechanic',
+            username TEXT,
+            role TEXT DEFAULT 'staff',
             is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
