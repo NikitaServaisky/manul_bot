@@ -1,68 +1,77 @@
 import logging
-from core.ai_clients import genai, groq
+from core.ai_clients import groq, gemini
 from PIL import Image
 
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
-    """Deep vision analysis using Gemini"""
-    img = Image.open(image_path)
+    """
+    Analyzes car repair images using the LATEST Gemini 2.0 SDK.
+    """
     base_prompt = """
-    אתה מנהל שיווק של מוסך 'Manul Garage'. 
-    תפקידך לכתוב פוסט שיווקי על התיקון שבתמונה.
-    דגשים:
-    1. שפה: עברית בלבד.
-    2. סגנון: מקצועי, חברי, של מוסכים (סלנג ישראלי).
-    3. גיוון: אל תשתמש באותם משפטים בכל פעם. תהיה יצירתי. פעם תתחיל בבעיה, פעם בתוצאה, פעם בחוויה של הלקוח.
-    4. אל תשתמש תמיד במשפט "החזרנו את הכלה". תשתמש בו רק אם זה באמת מתאים לרכב מיוחד.
-    5. בנוסף תוסיף את פרטי ההתקשרות שלנו: כתובת אליהו נאווי 6 באר שבע (מתחם סולל בונה לשעבר), טלפון: 054-688-2479
+    אתה כותב פוסטים לדף הפייסבוק של 'Manul Garage'. 
+    הסגנון שלך: קצר, קולע, גברי ומקצועי. בלי "חלק בלתי נפרד מחייכם" ובלי חפירות מיותרות.
+    
+    כללים:
+    1. תתמקד בתיקון הספציפי שבוצע (אם רשום לך 'החלפת צינורות בלם', תכתוב על זה!).
+    2. תן כבוד לרכב (במקרה הזה פורד מוסטנג).
+    3. תסיים תמיד ב: 📍 אליהו נאווי 6, באר שבע | 📞 054-688-2479.
+    4. תוסיף האשטאגים רלוונטיים בסוף.
+    
+    אם אתה לא רואה את התמונה, תסתמך אך ורק על מה שהמוסכניק כתב לך.
     """
 
     if instruction and current_text:
-        full_prompt = f"{base_prompt}\n\nThis is the current version:\n{current_text}\n\nUSER INSTRUCTION FOR EDIT: {instruction}\nRewrite the post according to the instruction, keeping the same style and context."
+        full_prompt = f"{base_prompt}\n\nCURRENT POST: {current_text}\nINSTRUCTION: {instruction}"
+    elif instruction:
+        full_prompt = f"{base_prompt}\n\nMECHANIC NOTE: {instruction}"
     else:
         full_prompt = base_prompt
-    
-    # Try Gemini 2.0 flash
+
     try:
+        # Using the NEW SDK syntax for Gemini 2.0
+        # gemini is the Client we imported from core.ai_clients
         img = Image.open(image_path)
-        response = genai.models.generate_content(model="gemini-2.0-flash", contents=[full_prompt, img])
-        return response.text
-    except Exception as e:
-        logging.warning(f"Gemini 2.0 failed: {e}. Trying Gemini 1.5...")
+        
+        response = gemini.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[full_prompt, img]
+        )
+        
+        if response.text:
+            return response.text
 
-    # Try Gemini 1.5 flash (Diffrent quota)
-    try:
-        response = genai.models.generate_content(model="gemini-1.5-flash", contents=[full_prompt, img])
-        return response.text
     except Exception as e:
-        logging.warning(f"Gemini 1.5 faild: {e}. Falling back to Groq (Text only)...")
+        logging.warning(f"Gemini failed: {e}. Falling back to Groq...")
 
-    # Final Fallback: Groq (llama 3) - No vision, just text generation based on prompt
+    # Final Fallback to Groq (Text Only)
     try:
+        fallback_prompt = f"{base_prompt}\n(Vision failed. Context): {instruction if instruction else 'Car repair'}"
         response = groq.chat.completions.create(
-            messages=[{"role": "user", "content": full_prompt}],
+            messages=[{"role": "user", "content": fallback_prompt}],
             model="llama-3.3-70b-versatile"
         )
-        return response.choices[0].message.content + "\n\n(Note: Image analysis unavailable, generated based on prompt)"
+        return response.choices[0].message.content + "\n\n(Note: Image analysis unavailable)"
     except Exception as e:
-        return f"Error: All AI models are currently unavilable. {e}"
+        return f"Error: All models failed. {e}"
 
 def analyze_lead_relevance(post_text):
-    """Analyzes a Facebook post to see if it's apotential custumer."""
-    
-    prompt = F"""
+    """
+    Analyzes Facebook posts for potential leads.
+    Returns 'YES' or 'NO'.
+    """
+    prompt = f"""
     Analyze the following Facebook post and determine if the person is looking for
-    car repairs, mechanic services, of has v vihicle problem.
+    car repairs, mechanic services, or has a vehicle problem.
     Reply with ONLY 'YES' or 'NO'.
 
     Post: {post_text}
     """
-
     try:
+        # Using groq.chat (with a dot, not a slash)
         response = groq.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile"
         )
         return response.choices[0].message.content.strip().upper()
     except Exception as e:
-        logging.error(f"Lead analysis failed {e}")
+        logging.error(f"Lead analysis failed: {e}")
         return "NO"
