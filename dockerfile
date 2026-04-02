@@ -1,23 +1,23 @@
-# use lite python image
-FROM python:3.11-slim
+# Use a lightweight Python image
+FROM python:3.10-slim
 
-# set work directory
+# Set working directory
 WORKDIR /app
 
-# install system dependensice
+# Install system dependencies (for image processing if needed)
 RUN apt-get update && apt-get install -y \
-    libjpeg-dev \
-    zlib1g-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# copy requirments file
-COPY requirments.txt .
+# Copy requirements and install them
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# install python libraries
-RUN pip install --no-cache-dir -r requirments.txt
-
-# copy code
+# Copy the rest of the application
 COPY . .
 
-# run code
-CMD ["python", "analyze_job.py"]
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Command to run the bot
+CMD ["python", "-m", "scripts.bot_handler"]
