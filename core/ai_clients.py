@@ -1,4 +1,5 @@
 import os
+
 # Try a more explicit import path
 try:
     from google.genai import Client

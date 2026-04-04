@@ -2,6 +2,7 @@ import logging
 from core.ai_clients import groq, gemini
 from PIL import Image
 
+
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
     Analyzes car repair images using the LATEST Gemini 2.0 SDK.
@@ -20,9 +21,15 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
 
     if instruction and current_text:
-        full_prompt = f"{base_prompt}\n\nCURRENT POST: {current_text}\nINSTRUCTION: {instruction}"
+        full_prompt = (
+            f"{base_prompt}\n\n"
+            f"משימה: עריכת פוסט קיים.\n"
+            f"חובה: שמור על סוג הרכב והטיפול מהפוסט המקורי!\n"
+            f"פוסט מקורי: {current_text}\n"
+            f"הוראת עדכון: {instruction}"
+        )
     elif instruction:
-        full_prompt = f"{base_prompt}\n\nMECHANIC NOTE: {instruction}"
+        full_prompt = f"{base_prompt}\n\nNEW TASK: תתעלם מכל פוסט קודם.\nMECHANIC NOTE: {instruction}"
     else:
         full_prompt = base_prompt
 
@@ -30,12 +37,11 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
         # Using the NEW SDK syntax for Gemini 2.0
         # gemini is the Client we imported from core.ai_clients
         img = Image.open(image_path)
-        
+
         response = gemini.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[full_prompt, img]
+            model="gemini-2.0-flash", contents=[full_prompt, img]
         )
-        
+
         if response.text:
             return response.text
 
@@ -47,11 +53,15 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
         fallback_prompt = f"{base_prompt}\n(Vision failed. Context): {instruction if instruction else 'Car repair'}"
         response = groq.chat.completions.create(
             messages=[{"role": "user", "content": fallback_prompt}],
-            model="llama-3.3-70b-versatile"
+            model="llama-3.3-70b-versatile",
         )
-        return response.choices[0].message.content + "\n\n(Note: Image analysis unavailable)"
+        return (
+            response.choices[0].message.content
+            + "\n\n(Note: Image analysis unavailable)"
+        )
     except Exception as e:
         return f"Error: All models failed. {e}"
+
 
 def analyze_lead_relevance(post_text):
     """
@@ -69,7 +79,7 @@ def analyze_lead_relevance(post_text):
         # Using groq.chat (with a dot, not a slash)
         response = groq.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile"
+            model="llama-3.3-70b-versatile",
         )
         return response.choices[0].message.content.strip().upper()
     except Exception as e:

@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+
 def init_db():
     # Ensure the uploads directory exists for images
     if not os.path.exists("uploads"):
@@ -58,6 +59,7 @@ def init_db():
     conn.commit()
     conn.close()
     print("✅ Database defined and tables created successfully.")
+
 
 if __name__ == "__main__":
     init_db()

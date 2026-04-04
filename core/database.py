@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def get_db():
     """connect to data base function"""
     conn = sqlite3.connect("manul_leads.db")
