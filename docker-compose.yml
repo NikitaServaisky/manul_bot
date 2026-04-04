@@ -6,6 +6,8 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - ZT=Asia/jerusalem
     volumes:
       - ./database.db:/app/database.db
       - ./uploads:/app/uploads
@@ -23,6 +25,8 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - ZT=Asia/jerusalem
     volumes:
       # Share the same database to sync leads between the hunter and the bot
       - ./database.db:/app/database.db
