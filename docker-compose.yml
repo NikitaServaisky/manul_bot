@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     environment:
-      - ZT=Asia/jerusalem
+      - TZ=Asia/jerusalem
     volumes:
       - ./database.db:/app/database.db
       - ./uploads:/app/uploads
@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     environment:
-      - ZT=Asia/jerusalem
+      - TZ=Asia/jerusalem
     volumes:
       # Share the same database to sync leads between the hunter and the bot
       - ./database.db:/app/database.db
