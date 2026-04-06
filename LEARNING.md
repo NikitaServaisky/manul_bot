@@ -1,15 +1,21 @@
-# 📘 Learning & Variables Dictionary
+# 📘 Learning & Variables Dictionary - Manul Garage Bot
 
-## Application States (ConversationHandlers)
-- `ADDING_USER_FLOW`: Handles the step-by-step process of adding a new employee via contact selection.
-- `WAITING_FOR_POST_IMAGE`: State where the bot waits for the mechanic to send a photo or text for AI analysis.
-- `EDITING_TEXT`: State where the bot waits for the user to provide manual corrections to the AI-generated post.
+## 🏗️ Project Architecture
+The bot uses a **Modular Architecture** to separate concerns:
+- `handlers/`: Logic for user interactions (Admin/Post flows).
+- `keyboards/`: All UI components (Reply and Inline).
+- `core/`: Low-level services (Auth, Database, Utils).
 
-## Key Variables
-- `ADMIN_ID`: The Telegram Chat ID of Nikita (Super-user). Fetched from `.env`.
-- `target_id`: Used during the registration flow to store the ID of the person being added.
-- `role`: Defines access levels: `mechanic` (posts only), `owner` (posts + user management).
+## 🔄 Conversation States
+- `ADDING_USER_FLOW`: (admin_handlers.py) Manages the sequence from clicking "Add" to role assignment.
+- `WAITING_FOR_CONTENT`: (post_handlers.py) The bot is idle, waiting for the mechanic to send a photo/text.
+- `EDITING_POST`: (post_handlers.py) The AI text is generated; waiting for the user to confirm, edit, or delete.
 
-## Functional Components
-- `request_users`: A Telegram API feature (v6.7+) that opens the user picker instead of manual ID entry.
-- `callback_data`: String labels (e.g., `setrole_123_mechanic`) passed when clicking Inline Buttons to trigger specific logic.
+## 🔑 Key Variables & Concepts
+- `ADMIN_ID`: The Telegram ID of Nikita. Hardcoded or loaded from `.env` as the primary authority.
+- `target_id`: The ID of the employee currently being added. Extracted from the `user_shared` object.
+- `role`: Permission level stored in DB:
+    - `mechanic`: Can only trigger post creation.
+    - `owner`: Can trigger posts AND manage team members.
+- `request_users`: Telegram API v6.7 tool. Opens the native contact picker for high security and UX.
+- `callback_data`: The hidden string behind Inline Buttons (e.g., `setrole_123_mechanic`) used to route user decisions.

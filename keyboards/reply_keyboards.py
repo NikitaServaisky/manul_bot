@@ -1,37 +1,30 @@
-# ---- External imports ---- #
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestUsers
 
+def get_main_menu(user_id, admin_id, role):
+    """
+    Main menu keyboard logic:
+    - Mechanics: Can only create posts.
+    - Owners/Admin: Can create posts AND employees
+    """
+    # Evryone can create posts
+    Buttons = [[KeyboardButton("📷 Создать пост")]]
 
-def get_post_confirmation_keyboard(fb_url):
-    """
-    Buttons that appermunder the AI-generated post.
-    """
-    keyboard = [
-        # Button 1: Deep link to Facebook with the text
-        [InlineKeyboardButton("🚀 Опубликовать (Facebook)", url=fb_url)],
-        # Button 2: Edit the taxt if the AI a mistake
-        [InlineKeyboardButton("✍️ Редактировать", callback_data="edit_post")],
-        # Button 3: Finish and return to main menu
-        [InlineKeyboardButton("✅ Готово", callback_data="finish_post")],
-        # Button 4: Delete/Cancel this post
-        [InlineKeyboardButton("❌ Удалить", callback_data="ignore_post")],
+    # Only Owner or Admin see "add employees" button
+    if user_id == admin_id or role == "owner":
+        Buttons.append([keyboardButton("➕ Добавить сотрудника")])
+
+        return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+def get_user_selector_keyboard():
+    """ Keyboard for selecting a user from Telegram contacts."""
+    buttons = [
+        [keyboardButton(
+            text="👤 Выбрать сотрудника",
+            request_users=KeyboardButtonRequestUsers(
+                request_id=1,
+                user_is_bot=False,max_quantity=1
+            )
+        )],
+        [KeyboardButton("🔙 Отмена")],
     ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def get_role_selection_keyboard(target_id):
-    """
-    Buttons for the Admin to choose a role for the new employee
-    """
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "👨‍🔧 Механик", callback_data=f"setrole_{target_id}_mechanic"
-            ),
-            InlineKeyboardButton(
-                "👑 Владелец", callback_data=f"setrole_{target_id}_owner"
-            ),
-        ],
-        [InlineKeyboardButton("🚫 Отмена", callback_data="cancel_auth")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    return ReplyKeyboardMarkup(buttons,resize_keyboard=True, one_time_keyboard=True)

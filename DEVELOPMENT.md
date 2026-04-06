@@ -1,14 +1,19 @@
 # 🛠️ Development Log & Roadmap
 
-## 📅 Status: 2026-04-06
-- **Completed:** - Designed new modular folder structure.
-    - Created `keyboards/` directory.
-    - Finished `reply_keyboards.py` (Main menu, User selector).
-    - Finished `inline_keyboards.py` (Post actions, Role selection).
-- **In Progress:** - Migrating "Spaghetti" code from `main.py` to `handlers/admin_handlers.py`.
+## 📅 Last Update: 2026-04-06
+### ✅ Completed Today (The Big Refactoring):
+- **Folder Structure:** Migrated from a single 280-line `main.py` to a modular setup.
+- **UI Upgrade:** Built a dedicated `keyboards/` package with Russian interface.
+- **Admin Module:** Implemented `handlers/admin_handlers.py` with `USER_SHARED` support.
+- **Post Module:** Implemented `handlers/post_handlers.py` with image/text AI integration.
+- **Documentation:** Created `LEARNING.md`, `DEVELOPMENT.md`, and `README.md`.
 
-## 🚀 To-Do List (Next Steps)
-1. [ ] Create `handlers/admin_handlers.py` to process `USER_SHARED` data.
-2. [ ] Create `handlers/post_handlers.py` to handle AI image/text processing.
-3. [ ] Clean up `main.py` to act only as an entry point.
-4. [ ] Update `Dockerfile` to ensure `python-telegram-bot>=20.0`.
+## 🚀 To-Do List (Short Term)
+1. [ ] **Final Deployment:** Run `docker-compose restart` and verify logs.
+2. [ ] **Testing:** Verify the "Cancel" (🔙 Отмена) button returns to the correct menu in all flows.
+3. [ ] **AI Tuning:** Refine the system prompt in `ai_logic.py` for better mechanic-style Russian.
+4. [ ] **Lead Hunter Integration:** Eventually link the Scrapper service into the Bot UI.
+
+## 📈 Long Term Goals
+- Multi-garage support.
+- Automated CRM reminders for oil changes based on post history.
