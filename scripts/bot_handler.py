@@ -7,7 +7,7 @@ from telegram import (
     InlineKeyboardMarkup,
     ReplyKeyboardMarkup,
     KeyboardButton,
-    KeyboardButtonRequestUsers, # Required for user selection
+    KeyboardButtonRequestUsers,  # Required for user selection
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -41,9 +41,13 @@ ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID"))
 
 # --- SECURITY MIDDLEWARE ---
 
+
 def restricted(func):
     """Decorator to restrict access to the Admin and authorized users only."""
-    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+
+    async def wrapped(
+        update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs
+    ):
         user_id = update.effective_user.id
         if user_id != ADMIN_ID and not is_user_authorized(user_id):
             logging.warning(f"Unauthorized access attempt by {user_id}")
@@ -51,34 +55,39 @@ def restricted(func):
                 await update.message.reply_text("❌ Нет доступа. Обратитесь к Никите.")
             return
         return await func(update, context, *args, **kwargs)
+
     return wrapped
 
+
 # --- KEYBOARDS (Russian UI) ---
+
 
 def get_main_menu_keyboard(user_id):
     """Main persistent menu based on user role."""
     role = get_user_role(user_id)
     buttons = [[KeyboardButton("📷 Создать пост")]]
-    
+
     if user_id == ADMIN_ID or role == "owner":
         buttons.append([KeyboardButton("➕ Добавить сотрудника")])
-    
+
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
 
 def get_user_selection_keyboard():
     """Keyboard that triggers the Telegram user picker."""
     buttons = [
-        [KeyboardButton(
-            text="👤 Выбрать сотрудника", 
-            request_users=KeyboardButtonRequestUsers(
-                request_id=1, 
-                user_is_bot=False, 
-                max_quantity=1
+        [
+            KeyboardButton(
+                text="👤 Выбрать сотрудника",
+                request_users=KeyboardButtonRequestUsers(
+                    request_id=1, user_is_bot=False, max_quantity=1
+                ),
             )
-        )],
-        [KeyboardButton("🔙 Отмена")]
+        ],
+        [KeyboardButton("🔙 Отмена")],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
+
 
 def get_marketing_keyboard(fb_url):
     """Inline keyboard for post management."""
@@ -90,7 +99,9 @@ def get_marketing_keyboard(fb_url):
     ]
     return InlineKeyboardMarkup(keyboard)
 
+
 # --- AUTH & USER MANAGEMENT ---
+
 
 @restricted
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,14 +112,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_main_menu_keyboard(user_id),
     )
 
+
 @restricted
 async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 1: Prompt admin to select a user from Telegram list."""
     await update.message.reply_text(
         "Нажмите кнопку ниже, чтобы выбрать сотрудника из списка контактов:",
-        reply_markup=get_user_selection_keyboard()
+        reply_markup=get_user_selection_keyboard(),
     )
     return ADDING_USER_FLOW
+
 
 @restricted
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -119,40 +132,45 @@ async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
     target_id = shared_user.user_ids[0]
-    
+
     keyboard = [
         [
-            InlineKeyboardButton("👨‍🔧 Механик", callback_data=f"setrole_{target_id}_mechanic"),
-            InlineKeyboardButton("👑 Владелец", callback_data=f"setrole_{target_id}_owner")
+            InlineKeyboardButton(
+                "👨‍🔧 Механик", callback_data=f"setrole_{target_id}_mechanic"
+            ),
+            InlineKeyboardButton(
+                "👑 Владелец", callback_data=f"setrole_{target_id}_owner"
+            ),
         ]
     ]
-    
+
     await update.message.reply_text(
         f"Пользователь выбран (ID: {target_id}). Какую роль ему назначить?",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
     return ConversationHandler.END
+
 
 async def handle_role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 3: Save user to DB and return to main menu."""
     query = update.callback_query
     admin_id = update.effective_user.id
     await query.answer()
-    
+
     # Parse callback: setrole_{id}_{role}
     _, target_id, role = query.data.split("_")
-    
+
     add_user(int(target_id), role=role)
-    
+
     await query.edit_message_text(f"✅ Пользователь {target_id} добавлен как {role}!")
-    
+
     # Return to main menu with keyboard
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Готово! Возвращаюсь в главное меню. 🛠️",
-        reply_markup=get_main_menu_keyboard(admin_id)
+        reply_markup=get_main_menu_keyboard(admin_id),
     )
-    
+
     # Notify the new user if possible
     try:
         await context.bot.send_message(
@@ -162,7 +180,9 @@ async def handle_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     except Exception:
         pass
 
+
 # --- POST CREATION ---
+
 
 @restricted
 async def start_post_creation(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,22 +191,23 @@ async def start_post_creation(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text("📷 Отправьте фото или опишите работу текстом.")
     return WAITING_FOR_POST_IMAGE
 
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles photo input and generates AI post."""
     context.user_data.clear()
     user_id = update.effective_user.id
     image_path = f"uploads/m_{user_id}_{int(time.time())}.jpg"
     os.makedirs("uploads", exist_ok=True)
-    
+
     try:
         photo_file = await update.message.photo[-1].get_file()
         await photo_file.download_to_drive(image_path)
         context.user_data["last_image_path"] = image_path
-        
+
         status_msg = await update.message.reply_text("🛠️ Генерирую пост...")
         content = analyze_mechanic_work(image_path)
         context.user_data["last_content"] = content
-        
+
         await update.message.reply_text(
             f"✨ **Ваш пост:**\n\n{content}",
             reply_markup=get_marketing_keyboard(create_facebook_deep_link(content)),
@@ -196,6 +217,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("❌ Ошибка при обработке фото.")
         return WAITING_FOR_POST_IMAGE
+
 
 async def handle_text_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles text-only input and generates AI post."""
@@ -215,6 +237,7 @@ async def handle_text_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await status_msg.delete()
     return EDITING_TEXT
 
+
 async def global_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancels current operation and returns to main menu."""
     user_id = update.effective_user.id
@@ -223,13 +246,14 @@ async def global_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.edit_message_text("❌ Отменено.")
     else:
         await update.message.reply_text("❌ Отменено.")
-        
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Меню:",
-        reply_markup=get_main_menu_keyboard(user_id)
+        reply_markup=get_main_menu_keyboard(user_id),
     )
     return ConversationHandler.END
+
 
 # --- APP SETUP ---
 
@@ -239,11 +263,15 @@ if __name__ == "__main__":
 
     # User Management Conversation
     admin_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("^➕ Добавить сотрудника$"), start_add_user_flow)],
+        entry_points=[
+            MessageHandler(
+                filters.Regex("^➕ Добавить сотрудника$"), start_add_user_flow
+            )
+        ],
         states={
             ADDING_USER_FLOW: [
                 MessageHandler(filters.StatusUpdate.USER_SHARED, process_user_shared),
-                MessageHandler(filters.Regex("^🔙 Отмена$"), global_cancel)
+                MessageHandler(filters.Regex("^🔙 Отмена$"), global_cancel),
             ],
         },
         fallbacks=[CommandHandler("cancel", global_cancel)],
