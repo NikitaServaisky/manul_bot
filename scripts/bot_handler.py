@@ -141,6 +141,12 @@ async def handle_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     await query.edit_message_text(f"✅ Пользователь {target_id} успешно добавлен как {role}!")
     
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Готово! Возвращаюсь в главное меню. 🛠️",
+        reply_markup=get_main_menu_keyboard(user_id) # מחזיר את הכפתורים
+    )
+    
     # Notify the new user
     try:
         await context.bot.send_message(
