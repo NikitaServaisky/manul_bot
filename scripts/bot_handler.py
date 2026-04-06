@@ -38,22 +38,29 @@ WAITING_FOR_POST_IMAGE = 3
 # Admin ID from .env
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID"))
 
+# --- SECURITY MIDDLEWARE ---
+def restricted(func):
+    """Decorator checking if user is authorized."""
+    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        user_id = update.effective_user.id
+        if user_id != ADMIN_ID and not is_user_authorized(user_id):
+            logging.warning(f"Unauthorized access by {user_id}")
+            if update.message:
+                await update.message.reply_text("❌ Нет доступа. / No access.")
+            return
+        return await func(update, context, *args, **kwargs)
+    return wrapped
+
 # --- KEYBOARDS ---
 
-
 def get_main_menu_keyboard(user_id):
-    """Main persistent keyboard in Russian."""
     role = get_user_role(user_id)
     buttons = [[KeyboardButton("📷 Создать пост")]]
-
     if user_id == ADMIN_ID or role == "owner":
         buttons.append([KeyboardButton("➕ Добавить пользователя")])
-
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
-
 def get_marketing_keyboard(fb_url):
-    """Inline keyboard for post actions."""
     keyboard = [
         [InlineKeyboardButton("🚀 Publish (Facebook)", url=fb_url)],
         [InlineKeyboardButton("✍️ Edit (Изменить)", callback_data="edit_post")],
@@ -62,17 +69,21 @@ def get_marketing_keyboard(fb_url):
     ]
     return InlineKeyboardMarkup(keyboard)
 
+# --- HANDLERS ---
 
-# --- UTILITY HANDLERS ---
-
+@restricted
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    await update.message.reply_text(
+        "Добро пожаловать в Manul Garage! 🛠️",
+        reply_markup=get_main_menu_keyboard(user_id),
+    )
 
 async def global_ignore(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Cancels and returns to main menu."""
     query = update.callback_query
     user_id = update.effective_user.id
     await query.answer()
-    context.user_data.clear()  # Wipe context on cancel
-
+    context.user_data.clear()
     await query.edit_message_text("❌ Процесс отменен.")
     await context.bot.send_message(
         chat_id=query.message.chat_id,
@@ -81,14 +92,11 @@ async def global_ignore(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-
 async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Finalizes the post."""
     query = update.callback_query
     user_id = update.effective_user.id
     await query.answer()
-    context.user_data.clear()  # Wipe context on finish
-
+    context.user_data.clear()
     await query.edit_message_text("✅ Пост завершен!")
     await context.bot.send_message(
         chat_id=query.message.chat_id,
@@ -97,110 +105,67 @@ async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-
-# --- START & AUTH ---
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    await update.message.reply_text(
-        "Добро пожаловать в Manul Garage! 🛠️",
-        reply_markup=get_main_menu_keyboard(user_id),
-    )
-
-
+@restricted
 async def start_post_creation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # Ensure clean start
+    context.user_data.clear()
     await update.message.reply_text("📷 Отправьте фото или опишите работу текстом.")
     return WAITING_FOR_POST_IMAGE
 
-
-# --- POST LOGIC ---
-
-
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles new photos and wipes old context."""
-    context.user_data.clear()  # Kill old Mustang data immediately
+    context.user_data.clear()
     user_id = update.effective_user.id
-
     image_path = f"uploads/m_{user_id}_{int(time.time())}.jpg"
     os.makedirs("uploads", exist_ok=True)
-
     try:
         photo_file = await update.message.photo[-1].get_file()
         await photo_file.download_to_drive(image_path)
         context.user_data["last_image_path"] = image_path
-
-        status_msg = await update.message.reply_text("🛠️ Генерирую пост по фото...")
+        status_msg = await update.message.reply_text("🛠️ Генерирую пост...")
         content = analyze_mechanic_work(image_path)
         context.user_data["last_content"] = content
-
-        fb_url = create_facebook_deep_link(content)
         await update.message.reply_text(
             f"✨ **Предложенный пост:**\n\n{content}",
-            reply_markup=get_marketing_keyboard(fb_url),
+            reply_markup=get_marketing_keyboard(create_facebook_deep_link(content)),
         )
         await status_msg.delete()
         return EDITING_TEXT
     except Exception as e:
-        logging.error(f"Photo error: {e}")
-        await update.message.reply_text("❌ Ошибка при обработке.")
+        await update.message.reply_text("❌ Ошибка.")
         return WAITING_FOR_POST_IMAGE
-
 
 async def handle_text_only_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles text-only posts and wipes old context."""
     user_text = update.message.text
-    if not user_text:
-        return WAITING_FOR_POST_IMAGE
-
-    # Clear old data so the AI doesn't remember previous cars/photos
     context.user_data.clear()
-
-    status_msg = await update.message.reply_text("✍️ Готовлю пост на основе текста...")
-
+    status_msg = await update.message.reply_text("✍️ Готовлю пост...")
     try:
         content = analyze_mechanic_work(None, instruction=user_text)
         context.user_data["last_content"] = content
-        context.user_data["last_image_path"] = None
-
-        fb_url = create_facebook_deep_link(content)
         await update.message.reply_text(
             f"✨ **Предложенный пост:**\n\n{content}",
-            reply_markup=get_marketing_keyboard(fb_url),
+            reply_markup=get_marketing_keyboard(create_facebook_deep_link(content)),
         )
     except Exception as e:
-        logging.error(f"Text error: {e}")
         await update.message.reply_text("❌ Ошибка.")
     finally:
         await status_msg.delete()
-
     return EDITING_TEXT
-
 
 async def start_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text("✍️ Что именно изменить?")
+    await update.callback_query.answer()
+    await update.callback_query.message.reply_text("✍️ Что именно изменить?")
     return EDITING_TEXT
 
-
 async def process_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processes edits while maintaining the CURRENT context only."""
     user_instruction = update.message.text
     image_path = context.user_data.get("last_image_path")
     last_content = context.user_data.get("last_content", "")
-
     status_msg = await update.message.reply_text("🔄 Обновляю...")
     try:
-        content = analyze_mechanic_work(
-            image_path, instruction=user_instruction, current_text=last_content
-        )
+        content = analyze_mechanic_work(image_path, instruction=user_instruction, current_text=last_content)
         context.user_data["last_content"] = content
-        fb_url = create_facebook_deep_link(content)
         await update.message.reply_text(
             f"✨ **Новый вариант:**\n\n{content}",
-            reply_markup=get_marketing_keyboard(fb_url),
+            reply_markup=get_marketing_keyboard(create_facebook_deep_link(content)),
         )
     except Exception as e:
         logging.error(f"Edit error: {e}")
@@ -208,23 +173,43 @@ async def process_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await status_msg.delete()
     return EDITING_TEXT
 
+@restricted
+async def start_add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👤 Введите Telegram ID нового пользователя:")
+    return ADDING_USER_ROLE
+
+@restricted
+async def process_add_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        new_id = int(update.message.text)
+        add_user(new_id, role="mechanic")
+        await update.message.reply_text(f"✅ Пользователь {new_id} добавлен!", 
+                                       reply_markup=get_main_menu_keyboard(update.effective_user.id))
+    except:
+        await update.message.reply_text("❌ Ошибка. Введите числовой ID.")
+    return ConversationHandler.END
 
 # --- MAIN ---
 
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    app = ApplicationBuilder().token(token).build()
+
+    admin_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^➕ Добавить пользователя$"), start_add_user)],
+        states={ADDING_USER_ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_add_user)]},
+        fallbacks=[CommandHandler("cancel", global_ignore)],
+    )
 
     post_conv = ConversationHandler(
         entry_points=[
             MessageHandler(filters.Regex("^📷 Создать пост$"), start_post_creation),
             MessageHandler(filters.PHOTO, handle_photo),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_only_post),
         ],
         states={
             WAITING_FOR_POST_IMAGE: [
                 MessageHandler(filters.PHOTO, handle_photo),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_only_post),
-                CallbackQueryHandler(global_ignore, pattern="^ignore_marketing$"),
             ],
             EDITING_TEXT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_edit),
@@ -234,11 +219,11 @@ if __name__ == "__main__":
             ],
         },
         fallbacks=[CommandHandler("start", start)],
-        allow_reentry=True,
     )
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(admin_conv)
     app.add_handler(post_conv)
 
-    print("🤖 Manul Garage Bot is LIVE and CLEAN.")
+    print("🤖 Manul Garage Bot is LIVE and SECURE.")
     app.run_polling()
