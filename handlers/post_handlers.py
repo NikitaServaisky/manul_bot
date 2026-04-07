@@ -102,7 +102,7 @@ post_conv = ConversationHandler(
         ],
         EDITING_POST: [
             # Handle 'Finish' and 'Delete' via callbacks
-            Callback_Query_Handler(finish_post, pattern="^(finish_post|ignore_post)$"),
+            CallbackQueryHandler(finish_post, pattern="^(finish_post|ignore_post)$"),
             # You can add 'edit_post' logic here later
         ],
     },
