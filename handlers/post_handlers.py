@@ -8,7 +8,7 @@ from telegram.ext import (
     MessageHandler, 
     filters, 
     CommandHandler,
-    Callback_Query_Handler
+    CallbackQueryHandler
 )
 
 # Internal Imports
