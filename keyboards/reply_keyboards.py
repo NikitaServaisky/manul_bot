@@ -11,7 +11,7 @@ def get_main_menu(user_id, admin_id, role):
 
     # Only Owner or Admin see "add employees" button
     if user_id == admin_id or role == "owner":
-        Buttons.append([keyboardButton("➕ Добавить сотрудника")])
+        Buttons.append([KeyboardButton("➕ Добавить сотрудника")])
 
         return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
