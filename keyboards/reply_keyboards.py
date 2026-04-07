@@ -28,4 +28,4 @@ def get_user_selector_keyboard():
         )],
         [KeyboardButton("🔙 Отмена")],
     ]
-    return ReplyKeyboardMarkup(selector_buttons,resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons,resize_keyboard=True, one_time_keyboard=True)
