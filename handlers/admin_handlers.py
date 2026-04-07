@@ -17,7 +17,7 @@ load_dotenv()
 
 # State for the ConviersationHandler
 ADDING_USER_FLOW = 1
-ADMIN_ID = init(os.getenv(TELEGRAM_CHAT_ID))
+ADMIN_ID = int(os.getenv(TELEGRAM_CHAT_ID))
 
 async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 1: Admin clicks 'Add emploee' and gets thr user selector."""
