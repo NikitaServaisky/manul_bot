@@ -80,7 +80,7 @@ async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Возврат в главное меню:",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic") # Role check logic can be added
+        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic")
     )
     return ConversationHandler.END
 

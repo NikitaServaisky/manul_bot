@@ -7,24 +7,25 @@ def get_main_menu(user_id, admin_id, role):
     - Owners/Admin: Can create posts AND employees
     """
     # Evryone can create posts
-    Buttons = [[KeyboardButton("📷 Создать пост")]]
+    buttons = [[KeyboardButton("📷 Создать пост")]]
 
     # Only Owner or Admin see "add employees" button
     if user_id == admin_id or role == "owner":
-        Buttons.append([KeyboardButton("➕ Добавить сотрудника")])
+        buttons.append([KeyboardButton("➕ Добавить сотрудника")])
 
         return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 def get_user_selector_keyboard():
     """ Keyboard for selecting a user from Telegram contacts."""
     buttons = [
-        [keyboardButton(
+        [KeyboardButton(
             text="👤 Выбрать сотрудника",
             request_users=KeyboardButtonRequestUsers(
                 request_id=1,
-                user_is_bot=False,max_quantity=1
+                user_is_bot=False,
+                max_quantity=1
             )
         )],
         [KeyboardButton("🔙 Отмена")],
     ]
-    return ReplyKeyboardMarkup(buttons,resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(selector_buttons,resize_keyboard=True, one_time_keyboard=True)
