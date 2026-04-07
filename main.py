@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Internal Imports - Bringing everything together
 from keyboards.reply_keyboards import get_main_menu
-from handlers.admin_handlers import admin_conv, handle_role_callback
+from handlers.admin_handlers import admin_conv, handel_role_callback
 from handlers.post_handlers import post_conv
 from core.auth_service import is_user_authorized, get_user_role
 
@@ -53,7 +53,7 @@ def main():
     app.add_handler(post_conv)   # AI Post creation flow
     
     # Handle the role selection callbacks (from admin_handlers)
-    app.add_handler(CallbackQueryHandler(handle_role_callback, pattern="^setrole_"))
+    app.add_handler(CallbackQueryHandler(handel_role_callback, pattern="^setrole_"))
 
     print("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
