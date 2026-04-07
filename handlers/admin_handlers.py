@@ -81,6 +81,7 @@ admin_conv = ConversationHandler(
     states={
         ADDING_USER_FLOW: [
             MessageHandler(filters.StatusUpdate.USERS_SHARED, process_user_shared),
+            CallbackQueryHandler(handel_role_callback, pattern="^setrole_"),
             MessageHandler(filters.Regex("^🔙 Отмена$"), cancel_admin_flow)
         ],
     },

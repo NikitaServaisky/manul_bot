@@ -50,10 +50,7 @@ def main():
     
     # The Modular Handlers we built
     app.add_handler(admin_conv)  # Employee management flow
-    app.add_handler(post_conv)   # AI Post creation flow
-    
-    # Handle the role selection callbacks (from admin_handlers)
-    app.add_handler(CallbackQueryHandler(handel_role_callback, pattern="^setrole_"))
+    app.add_handler(post_conv)   # AI Post creation flowed
 
     print("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
