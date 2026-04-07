@@ -32,9 +32,12 @@ async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE
     shared_user = update.message.users_shared
     if not shared_user or not shared_user.user_ids:
         await update.message.reply_text("❌ Ошибка выбора. Попробуйте еще раз.")
-        return ConversationHandler.END
+        return ADDING_USER_FLOW
 
     target_id = shared_user.user_ids[0]
+
+    # Debuging print
+    print(f"DEBUG: Selected User ID is {target_id}")
 
     await update.message.reply_text(
         f"Пользователь выбран (ID: {target_id}). Какую роль ему назначить?",
