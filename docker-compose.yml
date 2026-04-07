@@ -1,5 +1,5 @@
 services:
-  # Main Telegram Bot Service: Handles user interaction and post creation
+  # Main Telegram Bot Service
   manul-bot:
     build: .
     container_name: manul_garage_bot
@@ -8,17 +8,18 @@ services:
       - .env
     environment:
       - TZ=Asia/Jerusalem
+    command: ["python", "main.py"] 
     volumes:
+      - .:/app
       - ./database.db:/app/database.db
       - ./uploads:/app/uploads
-      - ./config:/app/config
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-  # Background Lead Hunter Service: Scans Facebook for leads (Sunday-Friday)
+  # Background Lead Hunter Service
   manul-hunter:
     build: .
     container_name: manul_garage_hunter
@@ -28,12 +29,9 @@ services:
     environment:
       - TZ=Asia/Jerusalem
     volumes:
-      # Share the same database to sync leads between the hunter and the bot
+      - .:/app
       - ./database.db:/app/database.db
-      # Access the group list configuration
-      - ./config:/app/config
-    # Override default command to run the hunter script instead of the bot
-    command: ["python", "-m", "scripts.hunter"]
+    command: ["python", "hunter_service.py"] 
     logging:
       driver: "json-file"
       options:
