@@ -8,6 +8,8 @@ services:
       - .env
     environment:
       - TZ=Asia/Jerusalem
+      - PYTHONPATH=/app
+    working_dir: /app
     command: ["python", "main.py"] 
     volumes:
       - .:/app
@@ -28,10 +30,11 @@ services:
       - .env
     environment:
       - TZ=Asia/Jerusalem
+      - PYTHONPATH=/app
     volumes:
       - .:/app
       - ./database.db:/app/database.db
-    command: ["python", "hunter_service.py"] 
+    command: ["python", "scripts/hunter.py"] 
     logging:
       driver: "json-file"
       options:

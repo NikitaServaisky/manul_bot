@@ -6,23 +6,27 @@ from core.utils import load_list
 from services.scrapper_services import get_facebook_posts
 from services.lead_service import check_and_save_lead
 
-# 1. Setup Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
-
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 def run_hunt():
     """Executes a single hunting cycle: fetch, analyze, and save leads."""
-    groups = load_list("config/groups.txt")
-    if not groups:
-        logging.error("No groups found in config/groups.txt")
-        return
-
-    # Select 3 random groups to scan
-    selected = random.sample(groups, min(3, len(groups)))
-    logging.info(f"🚀 Starting hunt in: {selected}")
-
     try:
+        groups = load_list("config/groups.txt")
+        if not groups:
+            logging.error("No groups found in config/groups.txt")
+            return
+
+        # Increase sample size slightly for better coverage
+        sample_size = min(5, len(groups))
+        selected = random.sample(groups, sample_size)
+        logging.info(f"🚀 Starting hunt in {sample_size} groups: {selected}")
+
         posts = get_facebook_posts(selected)
+        
+        found_count = 0
         for post in posts:
             text = post.get("text")
             url = post.get("url", "No URL")
@@ -30,35 +34,43 @@ def run_hunt():
             if text and url != "No URL":
                 if check_and_save_lead(text, url):
                     logging.info(f"🎯 Lead Captured: {url}")
+                    found_count += 1
+        
+        logging.info(f"🏁 Cycle finished. Found {found_count} new potential leads.")
+        
     except Exception as e:
-        logging.error(f"Error during hunting cycle: {e}")
+        logging.error(f"❌ Critical error during hunting cycle: {e}")
 
+def is_work_time(now):
+    """Checks if the current time falls within Sunday 08:00 to Friday 13:00."""
+    weekday = now.weekday() # 0=Mon, 6=Sun
+    hour = now.hour
+
+    # Sunday: After 08:00
+    if weekday == 6 and hour >= 8: return True
+    # Monday - Thursday: All day
+    if 0 <= weekday <= 3: return True
+    # Friday: Before 13:00
+    if weekday == 4 and hour < 13: return True
+    
+    return False
 
 def start_service():
-    """Main loop that manages the Sunday-Friday schedule."""
-    logging.info("🤖 Manul Hunter Service is live.")
+    logging.info("🤖 Manul Hunter Service is live and monitoring schedule.")
 
     while True:
         now = datetime.now()
-        weekday = now.weekday()  # 0=Mon, 4=Fri, 5=Sat, 6=Sun
-        hour = now.hour
-
-        # Schedule Logic: Start Sunday 08:00, End Friday 13:00
-        is_sunday_start = weekday == 6 and hour >= 8
-        is_standard_workday = 0 <= weekday <= 3  # Mon-Thu
-        is_friday_before_cutoff = weekday == 4 and hour < 13
-
-        if is_sunday_start or is_standard_workday or is_friday_before_cutoff:
+        
+        if is_work_time(now):
             run_hunt()
-            logging.info("😴 Cycle complete. Sleeping for 2 hours...")
-            time.sleep(7200)
+            # Reduced sleep to 45 minutes for faster response to customers
+            wait_time = 2700 
+            logging.info(f"😴 Sleeping for {wait_time//60} minutes...")
         else:
-            current_time = now.strftime("%A %H:%M")
-            logging.info(
-                f"⏳ Weekend mode active (Current: {current_time}). Waiting..."
-            )
-            time.sleep(3600)  # Check again in 1 hour
+            logging.info(f"⏳ Weekend mode (Current: {now.strftime('%A %H:%M')}). Waiting...")
+            wait_time = 3600 # Check every hour during weekend
 
+        time.sleep(wait_time)
 
 if __name__ == "__main__":
     start_service()
