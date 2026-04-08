@@ -10,7 +10,6 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
-      - ./manul_leads.db:/app/manul_leads.db
       - ./uploads:/app/uploads
     command: ["python", "main.py"]
 
@@ -25,5 +24,4 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
-      - ./manul_leads.db:/app/manul_leads.db
     command: ["python", "scripts/hunter.py"]
