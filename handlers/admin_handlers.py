@@ -29,14 +29,20 @@ async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ Step 2: User is selected. Ask for their role (Mechanic/Owner)."""
-    shared_user = update.message.users_shared
+    shared_data = update.message.users_shared or update.message.user_shared
+    # Debuging print
+    print(f"DEBUG FULL OBJECT: {shared_data}")
+
     target_id = None
-    if hasattr(shared_user, 'user_ids') and shared_user.user_ids:
-        target_id = shared_user.user_ids[0]
-    elif hasattr(shared_user, 'user_id'):
-        target_id = shared_user.user_id
+    if shared_data:
+        if hasattr(shared_data, 'user_ids') and shared_data.user_ids:
+            target_id = shared_data.user_ids[0]
+        elif hasattr(shared_data, 'user_id'):
+            target_id = shared_data.user_id
 
     if not target_id:
+        # Debuging print
+        print(f"FAILED TO GET ID. Update contents: {update.message.to_dict()}")
         await update.message.reply_text("❌ Ошибка выбора. Попробуйте еще раз.")
         return ADDING_USER_FLOW
 
