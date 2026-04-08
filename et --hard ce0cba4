@@ -1,0 +1,15 @@
+* [33m2c9c2d1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m update files to new database schema
+* [33me66f677[m update files to new database schema
+* [33mce0cba4[m Update handle role callback
+* [33m7bfd0dc[m Update handle role callback
+* [33m2ffd8fe[m Debug admin handler
+* [33m51eebe8[m Update environment docker-compose
+* [33m1ea3cae[m Update process user shared
+* [33mf5801f3[m Update dependencies to fix selection and shared userIDs
+* [33m5e8a36a[m repair get users
+* [33m65b5ff4[m repair adding user flow
+* [33m2e22c62[m replay_keboards refactoring
+* [33m1579e73[m def main modify
+* [33m3ac2352[m k -> K in reply_keyboards.py
+* [33mb1e1660[m fix: final typo correction for CallbackQueryHandler in post_handlers
+* [33m7048618[m fix: correct typo Callback_Query_Handler to CallbackQueryHandler

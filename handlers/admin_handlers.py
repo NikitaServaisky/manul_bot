@@ -101,7 +101,7 @@ admin_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex("^➕ Добавить сотрудника$"), start_add_user_flow)],
     states={
         ADDING_USER_FLOW: [
-            MessageHandler(filters.StatusUpdate.USER_SHARED, process_user_shared),
+            MessageHandler(filters.StatusUpdate.USERS_SHARED, process_user_shared),
             CallbackQueryHandler(handel_role_callback, pattern="^setrole_"),
             CallbackQueryHandler(cancel_admin_flow, pattern="^cancel_admin$"),
         ],
