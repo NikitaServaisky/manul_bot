@@ -1,44 +1,29 @@
 services:
-  # Main Telegram Bot Service
   manul-bot:
     build: .
     container_name: manul_garage_bot
     restart: always
-    env_file:
-      - .env
+    env_file: .env
     environment:
       - TZ=Asia/Jerusalem
       - PYTHONPATH=/app
-      - PYTHONUNBUFFERED= 1
-    working_dir: /app
-    command: ["python", "main.py"] 
+      - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
-      - ./database.db:/app/database.db
+      - ./manul_leads.db:/app/manul_leads.db
       - ./uploads:/app/uploads
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    command: ["python", "main.py"]
 
-  # Background Lead Hunter Service
   manul-hunter:
     build: .
     container_name: manul_garage_hunter
     restart: always
-    env_file:
-      - .env
+    env_file: .env
     environment:
       - TZ=Asia/Jerusalem
       - PYTHONPATH=/app
-      - PYTHONUNBUFFERED= 1
+      - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
-      - ./database.db:/app/database.db
-    command: ["python", "scripts/hunter.py"] 
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - ./manul_leads.db:/app/manul_leads.db
+    command: ["python", "scripts/hunter.py"]

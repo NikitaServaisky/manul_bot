@@ -9,13 +9,12 @@ from telegram.ext import (
 )
 from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
 from keyboards.inline_keyboards import get_role_selection_keyboard
-from core.auth_service import add_user, is_user_authorized
+from core.auth_service import add_user
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-# State for the ConversationHandler
 ADDING_USER_FLOW = 1
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
 
@@ -28,7 +27,7 @@ async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ADDING_USER_FLOW
 
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """ Step 2: User is selected. Correctly extracting ID from PTB Object. """
+    """ Step 2: User is selected. Extracting ID from PTB Object. """
     shared_data = update.message.users_shared or update.message.user_shared
     target_id = None
 
@@ -41,11 +40,8 @@ async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE
             target_id = shared_data.user_id
 
     if not target_id:
-        print(f"DEBUG: Still failing to get ID. Data: {shared_data}")
-        await update.message.reply_text("❌ Ошибка: Не удалось получить ID. Попробуйте еще раз.")
+        await update.message.reply_text("❌ Ошибка: Не удалось получить ID.")
         return ADDING_USER_FLOW
-
-    print(f"✅ SUCCESS: Target ID is {target_id}")
 
     await update.message.reply_text(
         f"Пользователь выбран (ID: {target_id}). Какую роль ему назначить?",
@@ -54,7 +50,7 @@ async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ADDING_USER_FLOW
 
 async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 3: Admin clicks a role button."""
+    """Step 3: Save user to DB."""
     query = update.callback_query
     admin_id = update.effective_user.id
     await query.answer()
@@ -72,12 +68,10 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             username=f"user_{target_id}", 
             role=role
         )
-        
         await query.edit_message_text(f"✅ Пользователь {target_id} успешно добавлен как {role}!")
-        
     except Exception as e:
         print(f"❌ DATABASE ERROR: {e}")
-        await query.edit_message_text(f"❌ Ошибка сохранения: {e}")
+        await query.edit_message_text(f"❌ Ошибка сохранения.")
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -87,22 +81,29 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     return ConversationHandler.END
 
 async def cancel_admin_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fallback: If user clicks 'Cancel' or types /cancel."""
-    user_id = update.effective_user.id
-    await update.message.reply_text(
-        "Действие отменено.",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, "owner")
+    """Cancel the process."""
+    query = update.callback_query
+    if query:
+        await query.answer()
+        await query.edit_message_text("❌ Действие отменено.")
+    else:
+        await update.message.reply_text("❌ Действие отменено.")
+
+    admin_id = update.effective_user.id
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Чем еще могу помочь? 🛠️",
+        reply_markup=get_main_menu(admin_id, ADMIN_ID, "owner")
     )
     return ConversationHandler.END
 
-# --- THE CONVERSATION HANDLER DEFINITION ---
 admin_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex("^➕ Добавить сотрудника$"), start_add_user_flow)],
     states={
         ADDING_USER_FLOW: [
-            MessageHandler(filters.StatusUpdate.USERS_SHARED, process_user_shared),
+            MessageHandler(filters.StatusUpdate.USER_SHARED, process_user_shared),
             CallbackQueryHandler(handel_role_callback, pattern="^setrole_"),
-            MessageHandler(filters.Regex("^🔙 Отмена$"), cancel_admin_flow)
+            CallbackQueryHandler(cancel_admin_flow, pattern="^cancel_admin$"),
         ],
     },
     fallbacks=[CommandHandler("cancel", cancel_admin_flow)],

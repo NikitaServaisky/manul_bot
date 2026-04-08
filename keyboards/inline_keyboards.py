@@ -31,6 +31,6 @@ def get_role_selection_keyboard(target_id):
                 "👑 Владелец", callback_data=f"setrole_{target_id}_owner"
             ),
         ],
-        [InlineKeyboardButton("🚫 Отмена", callback_data="cancel_auth")],
+        [InlineKeyboardButton("🚫 Отмена", callback_data="cancel_admin")],
     ]
     return InlineKeyboardMarkup(keyboard)
