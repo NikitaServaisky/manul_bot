@@ -63,12 +63,21 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if data[0] != "setrole":
         return
 
-    target_id = int(data[1])
-    role = data[2]
+    role = data[1]
+    target_id = int(data[2])
 
-    add_user(target_id, role=role)
-
-    await query.edit_message_text(f"✅ Пользователь {target_id} успешно добавлен как {role}!")
+    try:
+        add_user(
+            user_id=target_id, 
+            username=f"user_{target_id}", 
+            role=role
+        )
+        
+        await query.edit_message_text(f"✅ Пользователь {target_id} успешно добавлен как {role}!")
+        
+    except Exception as e:
+        print(f"❌ DATABASE ERROR: {e}")
+        await query.edit_message_text(f"❌ Ошибка сохранения: {e}")
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
