@@ -62,12 +62,16 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     target_id = int(data[1])
     role = data[2]
 
+    # Debuging print
+    print(f"DEBUG: Attempting to add user {target_id} with role {role}")
+
     try:
         add_user(
             user_id=target_id, 
             username=f"user_{target_id}", 
             role=role
         )
+        print(f"DEBUG: Successfully added user {target_id} to DB")
         await query.edit_message_text(f"✅ Пользователь {target_id} успешно добавлен как {role}!")
     except Exception as e:
         print(f"❌ DATABASE ERROR: {e}")
