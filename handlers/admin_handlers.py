@@ -30,11 +30,15 @@ async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """ Step 2: User is selected. Ask for their role (Mechanic/Owner)."""
     shared_user = update.message.users_shared
-    if not shared_user or not shared_user.user_ids:
+    target_id = None
+    if hasattr(shared_user, 'user_ids') and shared_user.user_ids:
+        target_id = shared_user.user_ids[0]
+    elif hasattr(shared_user, 'user_id'):
+        target_id = shared_user.user_id
+
+    if not target_id:
         await update.message.reply_text("❌ Ошибка выбора. Попробуйте еще раз.")
         return ADDING_USER_FLOW
-
-    target_id = shared_user.user_ids[0]
 
     # Debuging print
     print(f"DEBUG: Selected User ID is {target_id}")
