@@ -63,8 +63,8 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if data[0] != "setrole":
         return
 
-    role = data[1]
-    target_id = int(data[2])
+    target_id = int(data[1])
+    role = data[2]
 
     try:
         add_user(
