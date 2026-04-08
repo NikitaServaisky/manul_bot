@@ -28,26 +28,24 @@ async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ADDING_USER_FLOW
 
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """ Step 2: User is selected. Ask for their role (Mechanic/Owner)."""
+    """ Step 2: User is selected. Correctly extracting ID from PTB Object. """
     shared_data = update.message.users_shared or update.message.user_shared
-    # Debuging print
-    print(f"DEBUG FULL OBJECT: {shared_data}")
-
     target_id = None
+
     if shared_data:
-        if hasattr(shared_data, 'user_ids') and shared_data.user_ids:
-            target_id = shared_data.user_ids[0]
+        if hasattr(shared_data, 'users') and shared_data.users:
+            target_id = shared_data.users[0].user_id
+        elif shared_data.api_kwargs and 'user_ids' in shared_data.api_kwargs:
+            target_id = shared_data.api_kwargs['user_ids'][0]
         elif hasattr(shared_data, 'user_id'):
             target_id = shared_data.user_id
 
     if not target_id:
-        # Debuging print
-        print(f"FAILED TO GET ID. Update contents: {update.message.to_dict()}")
-        await update.message.reply_text("❌ Ошибка выбора. Попробуйте еще раз.")
+        print(f"DEBUG: Still failing to get ID. Data: {shared_data}")
+        await update.message.reply_text("❌ Ошибка: Не удалось получить ID. Попробуйте еще раз.")
         return ADDING_USER_FLOW
 
-    # Debuging print
-    print(f"DEBUG: Selected User ID is {target_id}")
+    print(f"✅ SUCCESS: Target ID is {target_id}")
 
     await update.message.reply_text(
         f"Пользователь выбран (ID: {target_id}). Какую роль ему назначить?",
