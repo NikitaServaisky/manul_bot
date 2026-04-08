@@ -2,6 +2,7 @@ import os
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 from dotenv import load_dotenv
+from scripts.init_db import init_db
 
 # Internal Imports - Bringing everything together
 from keyboards.reply_keyboards import get_main_menu
@@ -23,7 +24,7 @@ logging.basicConfig(
 async def start(update, context):
     """Entry point: Checks authorization and shows the correct menu."""
     user_id = update.effective_user.id
-    
+
     # 1. Security Check
     authorized = (user_id == ADMIN_ID) or is_user_authorized(user_id)
     
@@ -42,6 +43,10 @@ async def start(update, context):
 
 def main():
     """Start the bot."""
+
+    print("📦 Initializing database...")
+    init_db()
+    
     # Create the application
     app = ApplicationBuilder().token(TOKEN).build()
 

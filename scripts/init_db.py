@@ -7,7 +7,7 @@ def init_db():
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
 
-    conn = sqlite3.connect("manul_leads.db")
+    conn = sqlite3.connect("/app/manul_leads.db")
     cursor = conn.cursor()
 
     # 1. Users Table (Authorization)
