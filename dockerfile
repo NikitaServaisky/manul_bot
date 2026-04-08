@@ -1,12 +1,13 @@
 # Use a lightweight Python image
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (for image processing if needed)
+# Install system dependencies (including sqlite3 for debugging)
 RUN apt-get update && apt-get install -y \
     build-essential \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install them
@@ -20,4 +21,4 @@ COPY . .
 RUN mkdir -p uploads
 
 # Command to run the bot
-CMD ["python", "-m", "scripts.bot_handler"]
+CMD ["python", "main.py"]
