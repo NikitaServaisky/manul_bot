@@ -1,87 +1,97 @@
 import logging
-from core.ai_clients import groq, gemini
-from PIL import Image
-
+from utils.image_processor import process_image_for_api
+from services.llm_clients import call_gemini_20_flash, call_gemini_15_flash, call_groq_llama
 
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
-    Analyzes car repair images using the LATEST Gemini 2.0 SDK.
+    Main Router function - manages the post generation workflow and model failover.
     """
+    
+    # 1. Build the prompt (Business logic remains here for clarity)
     base_prompt = """
     אתה כותב פוסטים לדף הפייסבוק של 'Manul Garage'. 
-    הסגנון שלך: קצר, קולע, גברי ומקצועי. בלי "חלק בלתי נפרד מחייכם" ובלי חפירות מיותרות.
+    הסגנון שלך: קצר, קולע, גברי ומקצועי. בלי חפירות.
     
     כללים:
-    1. תתמקד בתיקון הספציפי שבוצע (אם רשום לך 'החלפת צינורות בלם', תכתוב על זה!).
-    2. תן כבוד לרכב הספציפי שבו אתה מטפל (זהה אותו מהתמונה או מהטקסט).
-    3. תסיים תמיד ב: 📍 אליהו נאווי 6, באר שבע | 📞 054-688-2479.
-    4. תוסיף האשטאגים רלוונטיים בסוף.
-    
-    אם אתה לא רואה את התמונה, תסתמך אך ורק על מה שהמוסכניק כתב לך.
+    1. תתמקד בתיקון הספציפי שבוצע!
+    2. זהה את הרכב מהתמונה או מהטקסט.
+    3. תסיים בכתובת וטלפון: 📍 אליהו נאווי 6, באר שבע | 📞 054-688-2479.
+    4. האשטאגים רלוונטיים בסוף.
     """
 
     if instruction and current_text:
-        full_prompt = (
-            f"{base_prompt}\n\n"
-            f"משימה: עריכת פוסט קיים.\n"
-            f"חובה: שמור על סוג הרכב והטיפול מהפוסט המקורי!\n"
-            f"פוסט מקורי: {current_text}\n"
-            f"הוראת עדכון: {instruction}"
-        )
+        full_prompt = f"{base_prompt}\nTask: Edit an existing post.\nOriginal Post: {current_text}\nRequested Update: {instruction}"
     elif instruction:
-        full_prompt = f"{base_prompt}\n\nNEW TASK: תתעלם מכל פוסט קודם.\nMECHANIC NOTE: {instruction}"
+        full_prompt = f"{base_prompt}\nNew Task: Create a post based on the following information:\n{instruction}"
     else:
         full_prompt = base_prompt
 
-    try:
-        # Using the NEW SDK syntax for Gemini 2.0
-        # gemini is the Client we imported from core.ai_clients
-        img = Image.open(image_path)
+    # 2. Process image into binary data (using the new utility)
+    image_data, mime_type = None, None
+    if image_path:
+        image_data, mime_type = process_image_for_api(image_path)
 
-        response = gemini.models.generate_content(
-            model="gemini-2.0-flash", contents=[full_prompt, img]
-        )
+    # 3. Chain of Responsibility (Model Failover)
+    
+    # Attempt 1: Gemini 2.0 Flash (Primary Multimodal Model)
+    logging.info("Attempting Gemini 2.0 Flash...")
+    result = call_gemini_20_flash(full_prompt, image_data, mime_type)
+    if result:
+        return result
 
-        if response.text:
-            return response.text
+    # Attempt 2: Gemini 1.5 Flash (Fallback for Quota/API issues)
+    logging.info("Gemini 2.0 failed or quota hit. Trying Gemini 1.5 Flash...")
+    result = call_gemini_15_flash(full_prompt, image_data, mime_type)
+    if result:
+        return result
 
-    except Exception as e:
-        logging.warning(f"Gemini failed: {e}. Falling back to Groq...")
+    # Attempt 3: Groq / Llama 3.3 (Final Safety Net - Text Only)
+    logging.info("Gemini family failed. Falling back to Groq (Text Only)...")
+    # Add a note to prevent hallucinations since vision is unavailable
+    fallback_prompt = f"{full_prompt}\n(Note: Image analysis is unavailable, rely only on the provided text)."
+    result = call_groq_llama(fallback_prompt)
+    
+    if result:
+        return result + "\n\n(Note: Image analysis unavailable)"
 
-    # Final Fallback to Groq (Text Only)
-    try:
-        fallback_prompt = f"{base_prompt}\n(Vision failed. Context): {instruction if instruction else 'Car repair'}"
-        response = groq.chat.completions.create(
-            messages=[{"role": "user", "content": fallback_prompt}],
-            model="llama-3.3-70b-versatile",
-        )
-        return (
-            response.choices[0].message.content
-            + "\n\n(Note: Image analysis unavailable)"
-        )
-    except Exception as e:
-        return f"Error: All models failed. {e}"
-
+    return "Error: All models failed to process the request."
 
 def analyze_lead_relevance(post_text):
     """
-    Analyzes Facebook posts for potential leads.
-    Returns 'YES' or 'NO'.
+    Analyzes Facebook posts to filter potential automotive leads using Groq.
+    Returns 'YES' or 'NO' based on relevance.
     """
+    
+    # 1. Define a strict prompt for binary classification
+    # We keep it in English as Llama 3.3 handles instructions better this way,
+    # even when analyzing Hebrew text.
     prompt = f"""
-    Analyze the following Facebook post and determine if the person is looking for
-    car repairs, mechanic services, or has a vehicle problem.
+    Analyze the following Facebook post and determine if the author is looking for:
+    - Car repairs or mechanic services
+    - Vehicle diagnostics or troubleshooting
+    - Specific automotive parts installation
+    - Recommendations for a garage or mechanic
+
     Reply with ONLY 'YES' or 'NO'.
 
     Post: {post_text}
     """
+
     try:
-        # Using groq.chat (with a dot, not a slash)
-        response = groq.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile",
-        )
-        return response.choices[0].message.content.strip().upper()
+        # 2. Use the new clean pipeline for Groq
+        # This keeps the main logic decoupled from the API implementation
+        result = call_groq_llama(prompt)
+
+        if result:
+            # Clean the output to ensure we get a strict 'YES' or 'NO'
+            cleaned_result = result.strip().upper()
+            if 'YES' in cleaned_result:
+                return "YES"
+            if 'NO' in cleaned_result:
+                return "NO"
+
+        return "NO"
+
     except Exception as e:
-        logging.error(f"Lead analysis failed: {e}")
+        logging.error(f"Lead relevance analysis failed: {e}")
         return "NO"
