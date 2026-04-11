@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 def call_gemini_20_flash(prompt,image_data=None, mime_type="image/jpeg"):
     """
-    Gemini 2.0 flash request with image supports (Btes)
+    Gemini 2.0 flash request with image supports (Bytes)
     """
     if not gemini:
         return None
@@ -18,11 +18,11 @@ def call_gemini_20_flash(prompt,image_data=None, mime_type="image/jpeg"):
         if image_data:
             contents.append(types.Part.from_bytes(data=image_data, mime_type=mime_type))
 
-            response = gemini.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=contents
-            )
-            return response.text
+        response = gemini.models.generate_content(
+            model = "gemini-2.0-flash",
+            contents = contents
+        )
+        return response.text if response else None
 
     except Exception as e:
         logger.warning(f"Gemini 2.0 Flash filed: {e}")
@@ -42,7 +42,7 @@ def call_gemini_15_flash(prompt, image_data=None, mime_type="image/jpeg"):
             contents.append(types.Part.from_bytes(data=image_data, mime_type=mime_type))
 
         response = gemini.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-flash-002",
             contents=contents
         )
         return response.text
@@ -60,7 +60,7 @@ def call_groq_llama(prompt):
     try:
         response = groq.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama3.3-70b-versatile",
+            model="llama-3.3-70b-versatile",
         )
         return response.choices[0].message.content
     except Exception as e:
