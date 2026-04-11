@@ -21,6 +21,8 @@ def process_image_for_api(image_path):
             mime_type= "image/jpeg"
 
         return image_bytes, mime_type
+        print(f"what i see in image_bytes: {image_bytes}")
+        print(f"what i see in mime_type: {mime_type}")
     
     except FileNotFoundError:
         logger.error(f"Image not found at path: {image_path}")

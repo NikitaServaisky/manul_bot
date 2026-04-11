@@ -21,8 +21,14 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
 
     if instruction and current_text:
         full_prompt = f"{base_prompt}\nTask: Edit an existing post.\nOriginal Post: {current_text}\nRequested Update: {instruction}"
+        print(f"base_prompt: {base_prompt}")
+        print(f"prompt from telegram input: {current_text}")
+        print(f"instruction: {instruction}")
+        print(f"full_prompt: {full_prompt}")
     elif instruction:
         full_prompt = f"{base_prompt}\nNew Task: Create a post based on the following information:\n{instruction}"
+        print(f"full_prompt: {full_prompt}")
+        print(f"new instruction {instruction}")
     else:
         full_prompt = base_prompt
 
@@ -49,6 +55,7 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     logging.info("Gemini family failed. Falling back to Groq (Text Only)...")
     # Add a note to prevent hallucinations since vision is unavailable
     fallback_prompt = f"{full_prompt}\n(Note: Image analysis is unavailable, rely only on the provided text)."
+    print(f"fallback_prompt: {fallback_prompt}")
     result = call_groq_llama(fallback_prompt)
     
     if result:
