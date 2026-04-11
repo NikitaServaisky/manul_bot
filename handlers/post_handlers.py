@@ -37,7 +37,7 @@ async def handle_post_content(update: Update, context: ContextTypes.DEFAULT_TYPE
     status_msg = await update.message.reply_text("🛠️ Генерирую пост, подождите...")
     
     image_path = None
-    user_description = None
+    user_description = update.message.text or update.message.caption
 
     # Case A: User sent a Photo
     if update.message.photo:
@@ -45,10 +45,6 @@ async def handle_post_content(update: Update, context: ContextTypes.DEFAULT_TYPE
         image_path = f"uploads/post_{user_id}_{int(time.time())}.jpg"
         os.makedirs("uploads", exist_ok=True)
         await photo_file.download_to_drive(image_path)
-    
-    # Case B: User sent only Text
-    elif update.message.text:
-        user_description = update.message.text
 
     try:
         # Call your AI service (Gemini/Groq logic)

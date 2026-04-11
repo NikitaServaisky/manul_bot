@@ -20,8 +20,8 @@ def process_image_for_api(image_path):
         if not mime_type:
             mime_type= "image/jpeg"
 
-        print(f"what i see in image_bytes: {image_bytes}")
-        print(f"what i see in mime_type: {mime_type}")
+        print(f"DEBUG: Read {len(image_bytes)} bytes, MIME: {mime_type}")
+        
         return image_bytes, mime_type
     
     except FileNotFoundError:
