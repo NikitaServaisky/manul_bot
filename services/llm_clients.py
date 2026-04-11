@@ -42,7 +42,7 @@ def call_gemini_15_flash(prompt, image_data=None, mime_type="image/jpeg"):
             contents.append(types.Part.from_bytes(data=image_data, mime_type=mime_type))
 
         response = gemini.models.generate_content(
-            model="gemini-1.5-flash-latest",
+            model="gemini-1.5-flash",
             contents=contents
         )
         return response.text
