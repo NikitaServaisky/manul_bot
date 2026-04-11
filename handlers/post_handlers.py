@@ -66,13 +66,26 @@ async def handle_post_content(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     return EDITING_POST
 
+async def handle_edit_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """נשלח כשהמשתמש לוחץ על כפתור העריכה"""
+    query = update.callback_query
+    await query.answer()
+    
+    await query.message.reply_text("✍️ Напишите, что именно нужно изменить בטקסט:")
+    return EDITING_POST
+
 async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 3: User clicked 'Done' or 'Ignore'. Back to menu."""
     query = update.callback_query
     user_id = update.effective_user.id
     await query.answer()
     
-    await query.edit_message_text("✅ Пост завершен!")
+    if query.data == "finish_post":
+        message_text = "✅ Пост успешно завершен!"
+    else:
+        message_text = "🗑️ Пост удален."
+    
+    await query.edit_message_text(message_text)
+    
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Возврат в главное меню:",
@@ -97,9 +110,11 @@ post_conv = ConversationHandler(
             MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, handle_post_content)
         ],
         EDITING_POST: [
-            # Handle 'Finish' and 'Delete' via callbacks
             CallbackQueryHandler(finish_post, pattern="^(finish_post|ignore_post)$"),
-            # You can add 'edit_post' logic here later
+            
+            CallbackQueryHandler(handle_edit_request, pattern="^edit_post$"),
+            
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_post_content)
         ],
     },
     fallbacks=[CommandHandler("cancel", cancel_post)],
