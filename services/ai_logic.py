@@ -1,6 +1,6 @@
 import logging
 from utils.image_processor import process_image_for_api
-from services.llm_clients import call_gemini_20_flash, call_gemini_15_flash, call_groq_llama
+from services.llm_clients import call_gemini_25_flash, call_gemini_20_flash, call_groq_llama
 
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
@@ -39,15 +39,15 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
 
     # 3. Chain of Responsibility (Model Failover)
     
-    # Attempt 1: Gemini 2.0 Flash (Primary Multimodal Model)
-    logging.info("Attempting Gemini 2.0 Flash...")
-    result = call_gemini_20_flash(full_prompt, image_data, mime_type)
+    # Attempt 1: Gemini 2.5 Flash (Primary Multimodal Model)
+    logging.info("Attempting Gemini 2.5 Flash...")
+    result = call_gemini_25_flash(full_prompt, image_data, mime_type)
     if result:
         return result
 
-    # Attempt 2: Gemini 1.5 Flash (Fallback for Quota/API issues)
-    logging.info("Gemini 2.0 failed or quota hit. Trying Gemini 1.5 Flash...")
-    result = call_gemini_15_flash(full_prompt, image_data, mime_type)
+    # Attempt 2: Gemini 2.0 Flash (Fallback for Quota/API issues)
+    logging.info("Gemini 2.5 failed or quota hit. Trying Gemini 2.0 Flash...")
+    result = call_gemini_20_flash(full_prompt, image_data, mime_type)
     if result:
         return result
 
