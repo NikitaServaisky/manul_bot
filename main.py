@@ -17,9 +17,9 @@ ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID"))
 
 # Logging Setup
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+
 
 async def start(update, context):
     """Entry point: Checks authorization and shows the correct menu."""
@@ -27,38 +27,40 @@ async def start(update, context):
 
     # 1. Security Check
     authorized = (user_id == ADMIN_ID) or is_user_authorized(user_id)
-    
+
     if not authorized:
         await update.message.reply_text("❌ Нет доступа. Обратитесь к администратору.")
         return
 
     # 2. Get Role from DB
     role = "owner" if user_id == ADMIN_ID else get_user_role(user_id)
-    
+
     # 3. Show Menu
     await update.message.reply_text(
         "🛠️ Добро пожаловать в Manul Garage!",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, role)
+        reply_markup=get_main_menu(user_id, ADMIN_ID, role),
     )
+
 
 def main():
     """Start the bot."""
 
     print("📦 Initializing database...")
     init_db()
-    
+
     # Create the application
     app = ApplicationBuilder().token(TOKEN).build()
 
     # Register Handlers
     app.add_handler(CommandHandler("start", start))
-    
+
     # The Modular Handlers we built
     app.add_handler(admin_conv)  # Employee management flow
-    app.add_handler(post_conv)   # AI Post creation flowed
+    app.add_handler(post_conv)  # AI Post creation flowed
 
     print("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()

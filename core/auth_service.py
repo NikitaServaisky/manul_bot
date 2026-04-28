@@ -9,10 +9,11 @@ def is_user_authorized(user_id):
     """Checks if the user is authorized and active in the system."""
     try:
         with get_db() as conn:
+
             # Using 'response' as requested
-            response = conn.execute(
-                "SELECT is_active FROM users WHERE user_id = ?", (user_id,)
-            ).fetchone()
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT is_active FROM users WHERE user_id = %s"),
+                response = cur.fetchone()
 
             # Check if user exists and is active
             return response is not None and response["is_active"] == 1

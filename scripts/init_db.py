@@ -1,65 +1,59 @@
-import sqlite3
 import os
+import logging
+from core.database import get_db
+from core.setup.get_schema_files import get_schema_files
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def init_db():
-    # Ensure the uploads directory exists for images
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
+    """
+    Database Initialization Engine:
+    1. Creates the uploads directory if it doesn't exist.
+    2. Scans SQL files from the schema directory.
+    3. Executes them sequentially on the PostgreSQL database.
+    """
+    # Updated part for init_db.py
 
-    conn = sqlite3.connect("/app/manul_leads.db")
-    cursor = conn.cursor()
 
-    # 1. Users Table (Authorization)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            username TEXT,
-            role TEXT DEFAULT 'staff',
-            is_active INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+if not os.path.exists("uploads/marketing"):
+    os.makedirs("uploads/marketing")
+    logger.info("📁 Created 'uploads/marketing' directory for AI analysis.")
 
-    # 2. Leads Table (For Facebook Scraping results)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            post_content TEXT, 
-            post_url TEXT UNIQUE, 
-            status TEXT DEFAULT 'new',
-            assigned_to INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(assigned_to) REFERENCES users(user_id)
-        )
-    """)
+    # Create the data directory for migration files and exports
+    if not os.path.exists("data"):
+        os.makedirs("data")
+        logger.info("📁 Created 'data' directory.")
 
-    # 3. Seen Leads Table (To prevent duplicate AI analysis in Hunter)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS seen_leads (
-            url TEXT PRIMARY KEY,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    # Get the sorted list of schema files (01, 02, 03...)
+    schema_files = get_schema_files()
 
-    # 4. Marketing Posts Table (For Vision results)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS marketing_posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            image_path TEXT,
-            generated_content TEXT,
-            status TEXT DEFAULT 'draft',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(user_id)
-        )
-    """)
+    if not schema_files:
+        logger.warning("⚠️ No SQL schema files found in the schema/ directory.")
+        return
 
-    conn.commit()
-    conn.close()
-    print("✅ Database defined and tables created successfully.")
+    try:
+        # Establish connection to PostgreSQL
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                for file_path in schema_files:
+                    logger.info(f"📜 Executing schema: {file_path}")
 
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        sql_script = f.read()
+
+                        if sql_script.strip():
+                            cur.execute(sql_script)
+
+                # Commit all changes to the database
+                conn.commit()
+
+        logger.info("✅ Database initialized and schemas applied successfully.")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize database: {e}")
 
 if __name__ == "__main__":
     init_db()

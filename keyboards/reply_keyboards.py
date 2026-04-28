@@ -1,5 +1,6 @@
 from telegram import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestUsers
 
+
 def get_main_menu(user_id, admin_id, role):
     """
     Main menu keyboard logic:
@@ -15,17 +16,18 @@ def get_main_menu(user_id, admin_id, role):
 
         return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
+
 def get_user_selector_keyboard():
-    """ Keyboard for selecting a user from Telegram contacts."""
+    """Keyboard for selecting a user from Telegram contacts."""
     buttons = [
-        [KeyboardButton(
-            text="👤 Выбрать сотрудника",
-            request_users=KeyboardButtonRequestUsers(
-                request_id=1,
-                user_is_bot=False,
-                max_quantity=1
+        [
+            KeyboardButton(
+                text="👤 Выбрать сотрудника",
+                request_users=KeyboardButtonRequestUsers(
+                    request_id=1, user_is_bot=False, max_quantity=1
+                ),
             )
-        )],
+        ],
         [KeyboardButton("🔙 Отмена")],
     ]
-    return ReplyKeyboardMarkup(buttons,resize_keyboard=True, one_time_keyboard=True)
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)

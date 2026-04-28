@@ -3,9 +3,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def process_image_for_api(image_path):
     """
-    Get the path to the image and pars him to bytes, identification on bytes and returned (image_bytes, mime_type) or (none, none) on error 
+    Get the path to the image and pars him to bytes, identification on bytes and returned (image_bytes, mime_type) or (none, none) on error
     """
 
     try:
@@ -18,12 +19,12 @@ def process_image_for_api(image_path):
 
         # if not inentificated set defult jpeg
         if not mime_type:
-            mime_type= "image/jpeg"
+            mime_type = "image/jpeg"
 
         print(f"DEBUG: Read {len(image_bytes)} bytes, MIME: {mime_type}")
-        
+
         return image_bytes, mime_type
-    
+
     except FileNotFoundError:
         logger.error(f"Image not found at path: {image_path}")
         return None, None

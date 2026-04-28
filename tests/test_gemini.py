@@ -7,7 +7,7 @@ load_dotenv()
 google_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 # check v1
-client = Client(api_key=google_key, http_options={'api_version': 'v1'})
+client = Client(api_key=google_key, http_options={"api_version": "v1"})
 
 print("🔍 Checking available models for your API key...")
 try:

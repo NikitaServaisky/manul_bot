@@ -28,18 +28,26 @@ def send_telegram_notification(text, url):
 def check_and_save_lead(text, url):
     """Handles deduplication, AI analysis, DB saving, and notification."""
     with get_db() as conn:
-        # 1. Uniqueness check (Avoid double processing)
-        if conn.execute("SELECT 1 FROM seen_leads WHERE url = ?", (url,)).fetchone():
-            return False
+        try:
+            # 1. Faster uniquenss check
+            # We only check 'seen_leads' to decide if we proceed
+            if conn.execute(
+                "SELECT 1 FROM seen_leads WHERE url = ?", (url,)
+            ).fetchone():
+                return False
 
-        # 2. AI Relevance analysis
-        ai_response = analyze_lead_relevance(text)
+            # 2. AI Relevance analysis (only if new)
+            if analyze_lead_relevance(text) != "YES":
+                # Optional: Mark as seen if not relevant to avoid re-analyzing
+                conn.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
+                conn.commit()
+                return False
 
-        if "YES" in ai_response:
-            # 3. Save to database
+            # 3. Save to database (Transaction safty)
+            # using placeholders to prevent SQL injection (standart practice)
             conn.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
             conn.execute(
-                "INSERT INTO leads (post_content, post_url) VALUES (?, ?)", (text, url)
+                "INSERT INTO LEADS (post_content, post_url) VALUES (?, ?)", (text, url)
             )
             conn.commit()
 
@@ -47,4 +55,7 @@ def check_and_save_lead(text, url):
             send_telegram_notification(text, url)
             return True
 
-    return False
+        except Exception as e:
+            logging.error(f"Error in check_and_save_lead: {e}")
+            conn.rollback()
+            return False
