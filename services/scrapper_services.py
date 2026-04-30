@@ -8,11 +8,20 @@ def get_facebook_posts(urls, limits=5):
     """
     try:
         # Triggering the actor with the URLs and limits
-        run = apify.actor("apify/facebook-groups-scruper").call(
+        run = apify.actor("apify/facebook-posts-scraper").call(
             run_inputs={
                 "startUrls": [{"url": u} for u in urls],
                 "resultsLimit": limits,
                 "viewAssets": False,
+                # Set proxies it's a critical for successfuly scruper
+                "proxyConfiguration": {
+                    "useApifyProxy": True,
+                    "apifyProxyGroups": ["RESIDENTIAL"],
+                    "apifyProxyCountryCode": "IL"
+                },
+                "useStealth": True,
+                "minDelaySecs": 5,
+                "maxDelaySecs": 15
             }
         )
 
