@@ -23,6 +23,8 @@ EDITING_POST = 2
 
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID"))
 
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 async def start_post_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 1: User clicks 'Create Post'. Ask for Image or Text."""
@@ -73,7 +75,7 @@ async def handle_post_content(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup=get_post_confirmation_keyboard(fb_link),
         )
     except Exception as e:
-        logging.error(f"AI Error: {e}")
+        logger.exception(f"AI Error: {e}")
         await update.message.reply_text("❌ Ошибка при генерации. Попробуйте еще раз.")
     finally:
         await status_msg.delete()

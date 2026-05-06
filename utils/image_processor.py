@@ -26,8 +26,8 @@ def process_image_for_api(image_path):
         return image_bytes, mime_type
 
     except FileNotFoundError:
-        logger.error(f"Image not found at path: {image_path}")
+        logger.exception(f"Image not found at path: {image_path}")
         return None, None
     except Exception as e:
-        logger.error(f"Error processing image: {e}")
+        logger.exception(f"Error processing image: {e}")
         return None, None

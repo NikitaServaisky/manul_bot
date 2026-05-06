@@ -1,6 +1,9 @@
+import logging
 from core.database import get_db
 from core.setup.get_schema_files import get_schema_files
 
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 def apply_schema():
     """Runing all files of schema has found in database"""
@@ -23,4 +26,4 @@ def apply_schema():
             # neccesery get commit for save
             conn.commit()
     except Exception as e:
-        print(f"Error applying schema: {e}")
+        logger.exception(f"Error applying schema: {e}")

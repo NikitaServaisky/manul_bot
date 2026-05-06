@@ -3,8 +3,7 @@ import logging
 from core.database import get_db
 from core.setup.get_schema_files import get_schema_files
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Logger setup for this file
 logger = logging.getLogger(__name__)
 
 def init_db():
@@ -49,7 +48,7 @@ def init_db():
         logger.info("✅ Database initialized and schemas applied successfully.")
 
     except Exception as e:
-        logger.error(f"❌ Failed to initialize database: {e}")
+        logger.exception(f"❌ Failed to initialize database: {e}")
 
 if __name__ == "__main__":
     init_db()

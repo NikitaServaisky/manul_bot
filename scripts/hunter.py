@@ -6,23 +6,21 @@ from core.utils import load_list
 from services.scrapper_services import get_facebook_posts
 from services.lead_service import check_and_save_lead
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
-
+# Logger Setup for this file
+logger = logging.getLogger(__name__)
 
 def run_hunt():
     """Executes a single hunting cycle: fetch, analyze, and save leads."""
     try:
         groups = load_list("config/groups.txt")
         if not groups:
-            logging.error("No groups found in config/groups.txt")
+            logger.error("No groups found in config/groups.txt")
             return
 
         # Increase sample size slightly for better coverage
         sample_size = min(5, len(groups))
         selected = random.sample(groups, sample_size)
-        logging.info(f"🚀 Starting hunt in {sample_size} groups: {selected}")
+        logger.info(f"🚀 Starting hunt in {sample_size} groups: {selected}")
 
         posts = get_facebook_posts(selected)
 
@@ -33,13 +31,13 @@ def run_hunt():
 
             if text and url != "No URL":
                 if check_and_save_lead(text, url):
-                    logging.info(f"🎯 Lead Captured: {url}")
+                    logger.info(f"🎯 Lead Captured: {url}")
                     found_count += 1
 
-        logging.info(f"🏁 Cycle finished. Found {found_count} new potential leads.")
+        logger.info(f"🏁 Cycle finished. Found {found_count} new potential leads.")
 
     except Exception as e:
-        logging.error(f"❌ Critical error during hunting cycle: {e}")
+        logger.error(f"❌ Critical error during hunting cycle: {e}")
 
 
 def is_work_time(now):
@@ -61,7 +59,7 @@ def is_work_time(now):
 
 
 def start_service():
-    logging.info("🤖 Manul Hunter Service is live and monitoring schedule.")
+    logger.info("🤖 Manul Hunter Service is live and monitoring schedule.")
 
     while True:
         now = datetime.now()
@@ -70,9 +68,9 @@ def start_service():
             run_hunt()
             # Reduced sleep to 45 minutes for faster response to customers
             wait_time = 2700
-            logging.info(f"😴 Sleeping for {wait_time//60} minutes...")
+            logger.info(f"😴 Sleeping for {wait_time//60} minutes...")
         else:
-            logging.info(
+            logger.info(
                 f"⏳ Weekend mode (Current: {now.strftime('%A %H:%M')}). Waiting..."
             )
             wait_time = 3600  # Check every hour during weekend

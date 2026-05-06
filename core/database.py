@@ -1,8 +1,11 @@
+import os
+import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 from contextlib import contextmanager
 
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def get_db():
@@ -23,7 +26,7 @@ def get_db():
         yield conn
     except Exception as e:
         # If there's a connection error, it will be caught here
-        print(f"Database connection error: {e}")
+        logger.exception(f"❌ Database connection error: {e}")
         raise
     finally:
         # Ensures the connection is closed after use

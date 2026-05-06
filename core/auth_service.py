@@ -17,7 +17,7 @@ def is_user_authorized(user_id):
             # Check if user exists and is active
             return response is not None and response["is_active"] == 1
     except Exception as e:
-        logger.error(f"Auth Error: {e}")
+        logger.exception(f"Auth Error: {e}")
         return False
 
 
@@ -41,7 +41,7 @@ def add_user(user_id, username, role="staff"):
             conn.commit()
             print(f"✅ User {username} ({role}) added successfully.")
     except Exception as e:
-        logger.error(f"Failed to add user: {e}")
+        logger.exception(f"Failed to add user: {e}")
         raise
 
 
@@ -57,5 +57,5 @@ def get_user_role(user_id):
                 response = cur.fetchone()
                 return response["role"] if response else None
     except Exception as e:
-        logger.error(f"Error fetching role: {e}")
+        logger.exception(f"Error fetching role: {e}")
         return None

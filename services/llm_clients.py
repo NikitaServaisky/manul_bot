@@ -25,7 +25,7 @@ def call_gemini_25_flash(prompt, image_data=None, mime_type="image/jpeg"):
         return response.text if response else None
 
     except Exception as e:
-        logger.warning(f"Gemini 2.5 Flash filed: {e}")
+        logger.exception(f"Gemini 2.5 Flash filed: {e}")
         return None
 
 
@@ -47,7 +47,7 @@ def call_gemini_20_flash(prompt, image_data=None, mime_type="image/jpeg"):
         )
         return response.text
     except Exception as e:
-        logger.error(f"Gemini 2.0 API Error: {e}")
+        logger.exception(f"Gemini 2.0 API Error: {e}")
         return None
 
 
@@ -65,5 +65,5 @@ def call_groq_llama(prompt):
         )
         return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Groq API Error: {e}")
+        logger.exception(f"Groq API Error: {e}")
         return None

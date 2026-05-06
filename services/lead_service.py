@@ -1,9 +1,12 @@
 import os
 import requests
+import logging
 from core.database import get_db
 from services.ai_logic import analyze_lead_relevance
 from core.utils import escape_md
 
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 def send_telegram_notification(text, url):
     """Sends a formatted message to the admin via Telegram API."""
@@ -56,6 +59,6 @@ def check_and_save_lead(text, url):
             return True
 
         except Exception as e:
-            logging.error(f"Error in check_and_save_lead: {e}")
+            logger.exception(f"Error in check_and_save_lead: {e}")
             conn.rollback()
             return False

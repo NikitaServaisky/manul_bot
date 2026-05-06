@@ -1,3 +1,5 @@
+import os
+import logging
 from telegram import Update
 from telegram.ext import (
     ContextTypes,
@@ -11,9 +13,11 @@ from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
 from keyboards.inline_keyboards import get_role_selection_keyboard
 from core.auth_service import add_user
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
+
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 ADDING_USER_FLOW = 1
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
@@ -66,16 +70,16 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     role = data[2]
 
     # Debuging print
-    print(f"DEBUG: Attempting to add user {target_id} with role {role}")
+    logger.info(f"DEBUG: Attempting to add user {target_id} with role {role}")
 
     try:
         add_user(user_id=target_id, username=f"user_{target_id}", role=role)
-        print(f"DEBUG: Successfully added user {target_id} to DB")
+        logger.imfo(f"DEBUG: Successfully added user {target_id} to DB")
         await query.edit_message_text(
             f"✅ Пользователь {target_id} успешно добавлен как {role}!"
         )
     except Exception as e:
-        print(f"❌ DATABASE ERROR: {e}")
+        logger.exception(f"❌ DATABASE ERROR: {e}")
         await query.edit_message_text(f"❌ Ошибка сохранения.")
 
     await context.bot.send_message(

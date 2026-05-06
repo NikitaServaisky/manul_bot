@@ -2,8 +2,7 @@ import sqlite3
 import logging
 from core.database import get_db
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Setup logger for this file
 logger = logging.getLogger(__name__)
 
 
@@ -56,7 +55,7 @@ def migrate_users(sqlite_db_path="data/manul_leads.db"):
         logger.info(f"✅ Successfully migrated {len(users)} users to PostgreSQL.")
 
     except Exception as e:
-        logger.error(f"❌ Migration failed: {e}")
+        logger.exception(f"❌ Migration failed: {e}")
     finally:
         if sqlite_conn:
             sqlite_conn.close()

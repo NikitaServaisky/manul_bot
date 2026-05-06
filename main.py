@@ -20,6 +20,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
+# Logger Setup for this file
+logger = logging.getLogger(__name__)
+
 
 async def start(update, context):
     """Entry point: Checks authorization and shows the correct menu."""
@@ -45,7 +48,7 @@ async def start(update, context):
 def main():
     """Start the bot."""
 
-    print("📦 Initializing database...")
+    logger.info("📦 Initializing database...")
     init_db()
 
     # Create the application
@@ -58,7 +61,7 @@ def main():
     app.add_handler(admin_conv)  # Employee management flow
     app.add_handler(post_conv)  # AI Post creation flowed
 
-    print("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
+    logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
 
 

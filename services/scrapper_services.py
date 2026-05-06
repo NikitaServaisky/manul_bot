@@ -1,4 +1,8 @@
+import logging
 from core.apify_client import apify
+
+# Logger setup for this file
+logger = logging.getLogger(__name__)
 
 
 def get_facebook_posts(urls, limits=5):
@@ -8,8 +12,8 @@ def get_facebook_posts(urls, limits=5):
     """
     try:
         # Triggering the actor with the URLs and limits
-        run = apify.actor("apify/facebook-posts-scraper").call(
-            run_inputs={
+        run = apify.actor("apify/facebook-groups-scraper").call(
+            run_input={
                 "startUrls": [{"url": u} for u in urls],
                 "resultsLimit": limits,
                 "viewAssets": False,
@@ -30,5 +34,5 @@ def get_facebook_posts(urls, limits=5):
 
     except Exception as e:
         # Minimalist error handling to keep the flow in main.py
-        print(f"Scruper error: {e}")
+        logger.exception(f"❌ Scruper error: {e}")
         return []

@@ -6,6 +6,8 @@ from services.llm_clients import (
     call_groq_llama,
 )
 
+# Setup logger for this file
+logger = logging.getLogger(__name__)
 
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
@@ -45,19 +47,19 @@ def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     # 3. Chain of Responsibility (Model Failover)
 
     # Attempt 1: Gemini 2.5 Flash (Primary Multimodal Model)
-    logging.info("Attempting Gemini 2.5 Flash...")
+    logger.info("Attempting Gemini 2.5 Flash...")
     result = call_gemini_25_flash(full_prompt, image_data, mime_type)
     if result:
         return result
 
     # Attempt 2: Gemini 2.0 Flash (Fallback for Quota/API issues)
-    logging.info("Gemini 2.5 failed or quota hit. Trying Gemini 2.0 Flash...")
+    logger.info("Gemini 2.5 failed or quota hit. Trying Gemini 2.0 Flash...")
     result = call_gemini_20_flash(full_prompt, image_data, mime_type)
     if result:
         return result
 
     # Attempt 3: Groq / Llama 3.3 (Final Safety Net - Text Only)
-    logging.info("Gemini family failed. Falling back to Groq (Text Only)...")
+    logger.info("Gemini family failed. Falling back to Groq (Text Only)...")
     # Add a note to prevent hallucinations since vision is unavailable
     fallback_prompt = f"{full_prompt}\n(Note: Image analysis is unavailable, rely only on the provided text)."
     print(f"fallback_prompt: {fallback_prompt}")
@@ -106,5 +108,5 @@ def analyze_lead_relevance(post_text):
         return "NO"
 
     except Exception as e:
-        logging.error(f"Lead relevance analysis failed: {e}")
+        logger.exception(f"Lead relevance analysis failed: {e}")
         return "NO"
