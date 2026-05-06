@@ -25,31 +25,31 @@ def send_telegram_notification(text, url):
         response = requests.post(api_url, json=payload)
         response.raise_for_status()
     except Exception as e:
-        print(f"Failed to send Telegram notification: {e}")
+        logger.error(f"Failed to send Telegram notification: {e}")
 
 
 def check_and_save_lead(text, url):
     """Handles deduplication, AI analysis, DB saving, and notification."""
     with get_db() as conn:
         try:
+            cursor = conn.cursor()
             # 1. Faster uniquenss check
             # We only check 'seen_leads' to decide if we proceed
-            if conn.execute(
-                "SELECT 1 FROM seen_leads WHERE url = ?", (url,)
-            ).fetchone():
+            cursor.execute("SELECT 1 FROM seen_leads WHERE url = ?", (url,))
+            if cursor.fetchone():
                 return False
 
             # 2. AI Relevance analysis (only if new)
             if analyze_lead_relevance(text) != "YES":
                 # Optional: Mark as seen if not relevant to avoid re-analyzing
-                conn.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
+                cursor.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
                 conn.commit()
                 return False
 
             # 3. Save to database (Transaction safty)
             # using placeholders to prevent SQL injection (standart practice)
-            conn.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
-            conn.execute(
+            cursor.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
+            cursor.execute(
                 "INSERT INTO LEADS (post_content, post_url) VALUES (?, ?)", (text, url)
             )
             conn.commit()
