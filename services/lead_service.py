@@ -35,22 +35,22 @@ def check_and_save_lead(text, url):
             cursor = conn.cursor()
             # 1. Faster uniquenss check
             # We only check 'seen_leads' to decide if we proceed
-            cursor.execute("SELECT 1 FROM seen_leads WHERE url = ?", (url,))
+            cursor.execute("SELECT 1 FROM seen_leads WHERE url = %s", (url,))
             if cursor.fetchone():
                 return False
 
             # 2. AI Relevance analysis (only if new)
             if analyze_lead_relevance(text) != "YES":
                 # Optional: Mark as seen if not relevant to avoid re-analyzing
-                cursor.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
+                cursor.execute("INSERT INTO seen_leads (url) VALUES (%s)", (url,))
                 conn.commit()
                 return False
 
             # 3. Save to database (Transaction safty)
             # using placeholders to prevent SQL injection (standart practice)
-            cursor.execute("INSERT INTO seen_leads (url) VALUES (?)", (url,))
+            cursor.execute("INSERT INTO seen_leads (url) VALUES (%s)", (url,))
             cursor.execute(
-                "INSERT INTO LEADS (post_content, post_url) VALUES (?, ?)", (text, url)
+                "INSERT INTO LEADS (post_content, post_url) VALUES (%s, %s)", (text, url)
             )
             conn.commit()
 
