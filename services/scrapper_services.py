@@ -34,5 +34,5 @@ def get_facebook_posts(urls, limits=5):
 
     except Exception as e:
         # Minimalist error handling to keep the flow in main.py
-        logger.exception(f"❌ Scruper error: {e}")
+        logger.exception(f"❌ Scrapper error: {e}")
         return []
