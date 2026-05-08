@@ -14,3 +14,6 @@ Thumbs.db
 # Temporary/Log files
 *.log
 temp_*.jpg
+
+# Configuration Secreets
+config/facebook_cookies.json
