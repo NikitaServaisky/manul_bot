@@ -8,6 +8,7 @@ from core.utils import escape_md
 # Setup logger for this file
 logger = logging.getLogger(__name__)
 
+
 def send_telegram_notification(text, url):
     """Sends a formatted message to the admin via Telegram API."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -15,17 +16,19 @@ def send_telegram_notification(text, url):
 
     # Building the notification message
     message = (
-        f"🎯 *New Lead Found!*\n\n{escape_md(text[:300])}\n\n🔗 [Link to Post]({url})"
+        f"<b>🎯 New Lead Found!</b>\n\n"
+        f"{text[:300]}...\n\n"
+        f"<a href='{url}'>🔗 Link to Post</a>"
     )
 
     api_url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": message, "parse_mode": "MarkdownV2"}
+    payload = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
 
     try:
         response = requests.post(api_url, json=payload)
         response.raise_for_status()
     except Exception as e:
-        logger.error(f"Failed to send Telegram notification: {e}")
+        logger.exception(f"Failed to send Telegram notification: {e}")
 
 
 def check_and_save_lead(text, url):
@@ -50,7 +53,8 @@ def check_and_save_lead(text, url):
             # using placeholders to prevent SQL injection (standart practice)
             cursor.execute("INSERT INTO seen_leads (url) VALUES (%s)", (url,))
             cursor.execute(
-                "INSERT INTO LEADS (post_content, post_url) VALUES (%s, %s)", (text, url)
+                "INSERT INTO LEADS (post_content, post_url) VALUES (%s, %s)",
+                (text, url),
             )
             conn.commit()
 

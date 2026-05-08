@@ -5,13 +5,16 @@ from psycopg2.extras import RealDictCursor
 # Basic logging configuration
 logger = logging.getLogger(__name__)
 
+
 def is_user_authorized(user_id):
     """Checks if the user is authorized and active in the system."""
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Removed the trailing comma from cur.execute
-                cur.execute("SELECT is_active FROM users WHERE user_id = %s", (user_id,))
+                cur.execute(
+                    "SELECT is_active FROM users WHERE user_id = %s", (user_id,)
+                )
                 response = cur.fetchone()
 
             # Check if user exists and is active
@@ -52,7 +55,7 @@ def get_user_role(user_id):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
                     "SELECT role FROM users WHERE user_id = %s AND is_active = 1",
-                    (user_id,)
+                    (user_id,),
                 )
                 response = cur.fetchone()
                 return response["role"] if response else None

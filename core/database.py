@@ -7,6 +7,7 @@ from contextlib import contextmanager
 # Setup logger for this file
 logger = logging.getLogger(__name__)
 
+
 @contextmanager
 def get_db():
     """

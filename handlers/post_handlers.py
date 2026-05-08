@@ -26,6 +26,7 @@ ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID"))
 # Setup logger for this file
 logger = logging.getLogger(__name__)
 
+
 async def start_post_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 1: User clicks 'Create Post'. Ask for Image or Text."""
     await update.message.reply_text(
@@ -92,37 +93,40 @@ async def cancel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
+
 async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Ends the conversation and clears user data."""
     query = update.callback_query
     await query.answer()
-    
-    action = query.data # "finish_post" or "ignore_post"
-    
+
+    action = query.data  # "finish_post" or "ignore_post"
+
     if action == "finish_post":
         await query.edit_message_text("✅ Пост опубликован (или скопирован)! Удачи!")
     else:
         await query.edit_message_text("🗑️ Пост отклонен.")
-        
+
     # Show main menu again
     user_id = update.effective_user.id
     await context.bot.send_message(
         chat_id=user_id,
         text="Чем еще могу помочь?",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic")
+        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic"),
     )
     return ConversationHandler.END
+
 
 async def handle_edit_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Asks the user what to change in the text."""
     query = update.callback_query
     await query.answer()
-    
+
     await query.message.reply_text(
         "📝 Напишите, что именно нужно изменить в тексте (например: 'сделай короче' или 'добавь цену'):"
     )
     # Go back to WAITING_FOR_CONTENT to process the new instruction
     return WAITING_FOR_CONTENT
+
 
 # --- POST CONVERSATION DEFINITION ---
 post_conv = ConversationHandler(

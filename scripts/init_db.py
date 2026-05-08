@@ -6,6 +6,7 @@ from core.setup.get_schema_files import get_schema_files
 # Logger setup for this file
 logger = logging.getLogger(__name__)
 
+
 def init_db():
     """
     Database Initialization Engine:
@@ -24,7 +25,7 @@ def init_db():
 
     # Get the sorted list of schema files (01, 02, 03...)
     schema_files = get_schema_files()
-    
+
     if not schema_files:
         logger.warning("⚠️ No SQL schema files found in the schema/ directory.")
         return
@@ -35,20 +36,21 @@ def init_db():
             with conn.cursor() as cur:
                 for file_path in schema_files:
                     logger.info(f"📜 Executing schema: {file_path}")
-                    
+
                     with open(file_path, "r", encoding="utf-8") as f:
                         sql_script = f.read()
-                        
+
                         if sql_script.strip():
                             cur.execute(sql_script)
-                
+
                 # Commit all changes to the database
                 conn.commit()
-                
+
         logger.info("✅ Database initialized and schemas applied successfully.")
 
     except Exception as e:
         logger.exception(f"❌ Failed to initialize database: {e}")
+
 
 if __name__ == "__main__":
     init_db()

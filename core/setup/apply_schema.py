@@ -5,6 +5,7 @@ from core.setup.get_schema_files import get_schema_files
 # Setup logger for this file
 logger = logging.getLogger(__name__)
 
+
 def apply_schema():
     """Runing all files of schema has found in database"""
     schema_files = get_schema_files()

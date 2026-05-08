@@ -9,6 +9,7 @@ from services.lead_service import check_and_save_lead
 # Logger Setup for this file
 logger = logging.getLogger(__name__)
 
+
 def run_hunt():
     """Executes a single hunting cycle: fetch, analyze, and save leads."""
     try:
@@ -33,11 +34,12 @@ def run_hunt():
                 if check_and_save_lead(text, url):
                     logger.info(f"🎯 Lead Captured: {url}")
                     found_count += 1
+                    time.sleep(random.uniform(1.0, 3.0))
 
         logger.info(f"🏁 Cycle finished. Found {found_count} new potential leads.")
 
     except Exception as e:
-        logger.error(f"❌ Critical error during hunting cycle: {e}")
+        logger.exception(f"❌ Critical error during hunting cycle: {e}")
 
 
 def is_work_time(now):
@@ -67,12 +69,11 @@ def start_service():
         if is_work_time(now):
             run_hunt()
             # Reduced sleep to 45 minutes for faster response to customers
-            wait_time = 2700
-            logger.info(f"😴 Sleeping for {wait_time//60} minutes...")
+            wait_minutes = random.randint(30, 60)
+            wait_time = wait_minutes * 60
+            logger.info(f"😴 Next hunt in {wait_minutes} minutes (Randomized).")
         else:
-            logger.info(
-                f"⏳ Weekend mode (Current: {now.strftime('%A %H:%M')}). Waiting..."
-            )
+            logger.info(f"⏳ Weekend mode. Waiting...")
             wait_time = 3600  # Check every hour during weekend
 
         time.sleep(wait_time)

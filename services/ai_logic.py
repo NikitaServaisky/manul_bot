@@ -9,6 +9,7 @@ from services.llm_clients import (
 # Setup logger for this file
 logger = logging.getLogger(__name__)
 
+
 def analyze_mechanic_work(image_path, instruction=None, current_text=None):
     """
     Main Router function - manages the post generation workflow and model failover.
