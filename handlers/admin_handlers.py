@@ -20,6 +20,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 ADDING_USER_FLOW = 1
+WAITING_FOR_NAME = 2
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
 
 
@@ -49,15 +50,33 @@ async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("❌ Ошибка: Не удалось получить ID.")
         return ADDING_USER_FLOW
 
+    context.user_data["pending_id"] = target_id
+
     await update.message.reply_text(
-        f"Пользователь выбран (ID: {target_id}). Какую роль ему назначить?",
+        f"✅ Пользователь выбран (ID: {target_id}).\n"
+        "📝 Введите ИМЯ и ФАМИЛИЮ сотрудника:"
+    )
+    return WAITING_FOR_NAME
+
+
+async def process_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Step 3: Name raceived. Now ask for role."""
+    user_name = update.message.text
+    target_id = context.user_data.get("pending_id")
+
+    # Save name in memory
+    context.user_data["pending_name"] = user_name
+
+    await update.message.reply_text(
+        f"Сотрудник: {user_name}\n"
+        "Какую роль ему назначить?",
         reply_markup=get_role_selection_keyboard(target_id),
     )
     return ADDING_USER_FLOW
 
 
 async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 3: Save user to DB."""
+    """Step 4: Save user to DB."""
     query = update.callback_query
     admin_id = update.effective_user.id
     await query.answer()
@@ -68,15 +87,16 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
     target_id = int(data[1])
     role = data[2]
+    full_name = context.user_data.get("pending_name", f"user_{target_id}")
 
     # Debuging print
-    logger.info(f"DEBUG: Attempting to add user {target_id} with role {role}")
+    logger.info(f"DEBUG: Attempting to add user {target_id} that is called {full_name} with role {role}")
 
     try:
-        add_user(user_id=target_id, username=f"user_{target_id}", role=role)
-        logger.imfo(f"DEBUG: Successfully added user {target_id} to DB")
+        add_user(user_id=target_id, username=full_name, role=role)
+        logger.info(f"DEBUG: Successfully added user {target_id}, {full_name}, {role} to DB")
         await query.edit_message_text(
-            f"✅ Пользователь {target_id} успешно добавлен как {role}!"
+            f"✅ Сотрудник {full_name} добавлен как {role}!"
         )
     except Exception as e:
         logger.exception(f"❌ DATABASE ERROR: {e}")
@@ -117,6 +137,9 @@ admin_conv = ConversationHandler(
             MessageHandler(filters.StatusUpdate.USERS_SHARED, process_user_shared),
             CallbackQueryHandler(handel_role_callback, pattern="^setrole_"),
             CallbackQueryHandler(cancel_admin_flow, pattern="^cancel_admin$"),
+        ],
+        WAITING_FOR_NAME: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, process_user_name),
         ],
     },
     fallbacks=[CommandHandler("cancel", cancel_admin_flow)],
