@@ -14,14 +14,19 @@ def init_db():
     2. Scans SQL files from the schema directory.
     3. Executes them sequentially on the PostgreSQL database.
     """
-    # Create the necessary directories
-    if not os.path.exists("uploads/marketing"):
-        os.makedirs("uploads/marketing")
-        logger.info("📁 Created 'uploads/marketing' directory.")
+    
+    # Base directories for the project
+    base_dirs = [
+        "data",
+        "uploads/marketing",
+        "uploads/employees", # Base directory for all employee documents
+        "uploads/temp"       # Temporary directory for processing uploads
+    ]
 
-    if not os.path.exists("data"):
-        os.makedirs("data")
-        logger.info("📁 Created 'data' directory.")
+    for directory in base_dirs:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            logger.info(f"📁 Created '{directory}' directory.")
 
     # Get the sorted list of schema files (01, 02, 03...)
     schema_files = get_schema_files()
@@ -50,6 +55,18 @@ def init_db():
 
     except Exception as e:
         logger.exception(f"❌ Failed to initialize database: {e}")
+
+
+def prepare_employee_directory(user_id):
+    """
+    Creates a dedicated folder for a specific employee if it doesn't exist.
+    This should be called during the 'Add Employee' flow or when uploading a doc.
+    """
+    path = f"uploads/employees/{user_id}/documents"
+    if not os.path.exists(path):
+        os.makedirs(path)
+        logger.info(f"📁 Created private directory for employee: {user_id}")
+    return path
 
 
 if __name__ == "__main__":
