@@ -34,3 +34,18 @@ def get_role_selection_keyboard(target_id):
         [InlineKeyboardButton("🚫 Отмена", callback_data="cancel_admin")],
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
+def get_salary_type_keyboard():
+    """Generate a kyeboard for selecting the employee's a salary type."""
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Почасовая (hourly)", callback_data="salary_hourly"
+            ),
+            InlineKeyboardButton(
+                "Оклад (monthly)", callback_data="salary_monthly"
+            ),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
