@@ -134,7 +134,7 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(f"✅ Сотрудник {user_data['username']} успешно добавлен!")
     except Exception as e:
         logger.exception(f"❌ DB ERROR: {e}")
-        await query.edit_message_text("❌ Ошибка при сохранении ב-DB.")
+        await query.edit_message_text("❌ Ошибка при сохранении DB.")
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -144,7 +144,10 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     context.user_data.clear() # Clean up
     return ConversationHandler.END
 
-# ... cancel_admin_flow remains the same ...
+async def cancel_admin_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """cancels the current conversation flow."""
+    await update.message.reply_text("❌ Действие отменено.")
+    return ConversationHandler.END
 
 admin_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex("^➕ Добавить сотрудника$"), start_add_user_flow)],
