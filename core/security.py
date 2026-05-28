@@ -15,7 +15,7 @@ if not ENCRPTION_KEY:
 
 chiper_suite = Fernet(ENCRPTION_KEY.encode())
 
-def encrypy_data(data: str) -> str:
+def encrypt_data(data: str) -> str:
     """ Encrypts a string using Fernet symmetric encryption."""
     if not data:
         return data
