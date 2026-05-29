@@ -9,9 +9,14 @@ load_dotenv()
 ENCRPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY")
 
 if not ENCRPTION_KEY:
-    # Fallback for development only so the bot won't crash immediately
-    # In production, ALWAYS set FIELD_ENCRIPTION_KEY in your .env file
-    ENCRPTION_KEY = Fernet.generate_key().decode()
+    # Check if we are running in a local/dev environment or production
+    # If it's a server environment, crash immediately to prevent data encryption
+    if os.getenv("ENV_MODE") == "PRODUCTION":
+        print("❌ ERROR: FIELD_ENCRYPTION_KEY is missing in production! Crashing to protect data.")
+        sys.exit(1)
+    else:
+        print("⚠️ WARNING: FIELD_ENCRYPTION_KEY not found. Generating a temporary volatile key for development.")
+        ENCRPTION_KEY = Fernet.generate_key().decode()
 
 chiper_suite = Fernet(ENCRPTION_KEY.encode())
 
@@ -28,8 +33,9 @@ def decrypt_data(data: str) -> str:
     if not data:
         return data
     try:
+        # Try to decrypt assuming the string is Fernet encrypted tokens
         decrypted_text = chiper_suite.decrypt(data.encode())
         return decrypted_text.decode()
     except Exception:
-        # If decryption fails (e.g bad key or unencrypted data), return original
+        # Fallback for unencrypted legacy rows during migration phase
         return data
