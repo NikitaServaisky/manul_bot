@@ -1,5 +1,4 @@
 from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, CommandHandler, filters
-# English comment: Import all targeted callbacks from the dedicated module
 import handlers.admin_callbacks as cb
 
 # Updated Conversation States Matching the Callbacks
@@ -24,12 +23,32 @@ admin_conv = ConversationHandler(
         ],
         WAITING_FOR_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_user_name)],
         WAITING_FOR_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_user_id_number)],
-        WAITING_FOR_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_user_phone)],
-        # English comment: Bank registration state routing
-        WAITING_FOR_BANK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_name)],
-        WAITING_FOR_BANK_BRANCH: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_branch)],
-        WAITING_FOR_BANK_ACCOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_account)],
-        WAITING_FOR_SALARY_TYPE: [CallbackQueryHandler(cb.process_salary_type, pattern="^sal_")],
+        
+        # Added CallbackQueryHandler to catch the "skip_phone" button action
+        WAITING_FOR_PHONE: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_user_phone),
+            CallbackQueryHandler(cb.process_user_phone, pattern="^skip_phone$")
+        ],
+        
+        # Bank registration state routing with text inputs and skip buttons paired
+        WAITING_FOR_BANK_NAME: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_name),
+            CallbackQueryHandler(cb.process_bank_name, pattern="^skip_bank$")
+        ],
+        WAITING_FOR_BANK_BRANCH: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_branch),
+            CallbackQueryHandler(cb.process_bank_branch, pattern="^skip_branch$")
+        ],
+        WAITING_FOR_BANK_ACCOUNT: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_bank_account),
+            CallbackQueryHandler(cb.process_bank_account, pattern="^skip_account$")
+        ],
+        
+        # Fixed pattern to match your optimized inline keyboard ('salary_hourly' / 'salary_monthly')
+        WAITING_FOR_SALARY_TYPE: [
+            CallbackQueryHandler(cb.process_salary_type, pattern="^salary_")
+        ],
+        
         WAITING_FOR_RATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, cb.process_salary_rate)],
         WAITING_FOR_ROLE: [
             CallbackQueryHandler(cb.handel_role_callback, pattern="^setrole_"),

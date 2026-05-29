@@ -49,3 +49,10 @@ def get_salary_type_keyboard():
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+def get_skip_keyboard(step_name: str):
+    """ Generates a standalone skip button for optional filds."""
+    keyboard = [[
+        InlineKeyboardButton("⏩ Пропустить", callback_data=f"skip_{step_name}")
+    ]]
+    return InlineKeyboardMarkup(keyboard)

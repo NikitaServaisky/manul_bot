@@ -3,7 +3,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
-from keyboards.inline_keyboards import get_role_selection_keyboard, get_salary_type_keyboard
+from keyboards.inline_keyboards import get_role_selection_keyboard, get_salary_type_keyboard, get_skip_keyboard
 from core.auth_service import add_user
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,25 @@ ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
     WAITING_FOR_BANK_NAME, WAITING_FOR_BANK_BRANCH, WAITING_FOR_BANK_ACCOUNT,
     WAITING_FOR_SALARY_TYPE, WAITING_FOR_RATE, WAITING_FOR_ROLE
 ) = range(1, 11)
+
+
+async def _handle_optional_input(update: Update, context: ContextTypes.DEFAULT_TYPE, field_name: str):
+    """
+    Helper to handle optional fields safely. 
+    Handles both normal text inputs and skip callback queries without breaking.
+    """
+    query = update.callback_query
+
+    if query:
+        await query.answer()
+        extracted_value = None
+        msg = query.message
+    else:
+        extracted_value = update.message.text
+        msg = update.message
+
+    context.user_data[f"pending_{field_name}"] = extracted_value
+    return msg
 
 
 async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,37 +73,56 @@ async def process_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def process_user_id_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 4: ID Number received, ask for Phone."""
+    """Step 4: ID Number received (Required), ask for Phone (Optional)."""
     context.user_data["pending_id_num"] = update.message.text
-    await update.message.reply_text("📞 Введите НОМЕР ТЕЛЕФОНА:")
+    
+    # Provide a skip button for the phone number step
+    await update.message.reply_text(
+        "📞 Введите НОМЕР ТЕЛЕФОНА (или нажмите Пропустить):",
+        reply_markup=get_skip_keyboard("phone")    
+    )
     return WAITING_FOR_PHONE
 
 
 async def process_user_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 5: Phone received, ask for Bank Name (New Step)."""
-    context.user_data["pending_phone"] = update.message.text
-    await update.message.reply_text("🏦 Введите НАЗВАНИЕ БАНКА (например: Leumi, Hapoalim):")
+    """Step 5: Handle Phone input (text or skip) and ask for Bank Name (Optional)."""
+    msg = await _handle_optional_input(update, context, "phone")
+    
+    await msg.reply_text(
+        "🏦 Введите НАЗВАНИЕ БАНКА (или нажмите Пропустить):",
+        reply_markup=get_skip_keyboard("bank")
+    )
     return WAITING_FOR_BANK_NAME
 
 
 async def process_bank_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 6: Bank Name received, ask for Branch Number (New Step)."""
-    context.user_data["pending_bank_name"] = update.message.text
-    await update.message.reply_text("🏢 Введите НОМЕР ФИЛИАЛА (Branch):")
+    """Step 6: Handle Bank Name input (text or skip) and ask for Branch Number (Optional)."""
+    msg = await _handle_optional_input(update, context, "bank_name")
+    
+    await msg.reply_text(
+        "🏢 Введите НОМЕР ФИЛИАЛА (Branch) (или нажмите Пропустить):",
+        reply_markup=get_skip_keyboard("branch")
+    )
     return WAITING_FOR_BANK_BRANCH
 
 
 async def process_bank_branch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 7: Branch Number received, ask for Account Number (New Step)."""
-    context.user_data["pending_bank_branch"] = update.message.text
-    await update.message.reply_text("💳 Введите НОМЕР СЧЕТА (Account Number):")
+    """Step 7: Handle Branch input (text or skip) and ask for Account Number (Optional)."""
+    msg = await _handle_optional_input(update, context, "bank_branch")
+    
+    await msg.reply_text(
+        "💳 Введите НОМЕР СЧЕТА (Account Number) (или нажмите Пропустить):",
+        reply_markup=get_skip_keyboard("account")
+    )
     return WAITING_FOR_BANK_ACCOUNT
 
 
 async def process_bank_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 8: Account Number received, ask for Salary Type."""
-    context.user_data["pending_bank_account"] = update.message.text
-    await update.message.reply_text(
+    """Step 8: Handle Account input (text or skip) and ask for Salary Type (Required)."""
+    msg = await _handle_optional_input(update, context, "bank_account")
+    
+    # Back to mandatory steps, show your optimized salary keyboard
+    await msg.reply_text(
         "💰 Выберите ТИП ОПЛАТЫ:",
         reply_markup=get_salary_type_keyboard()
     )
@@ -132,7 +170,6 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     role = data[2]
     saved_username = context.user_data.get("pending_name")
     
-    # Construct the final payload dictionary including bank credentials
     user_data = {
         "user_id": target_id,
         "username": saved_username,
