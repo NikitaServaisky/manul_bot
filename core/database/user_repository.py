@@ -24,7 +24,7 @@ def db_save_user(user_id, username, role, data_dict):
                     """
                     INSERT INTO users (
                         user_id, username, role, id_number, phone_number, 
-                        salary_type, base_salary_rate, bank_name, bank_branch, bank_account_num, is_active
+                        salary_type, base_salary_rate, bank_name, bank_branch, bank_account_number, is_active
                     ) 
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
                     ON CONFLICT (user_id) DO UPDATE SET
@@ -36,7 +36,7 @@ def db_save_user(user_id, username, role, data_dict):
                         base_salary_rate = EXCLUDED.base_salary_rate,
                         bank_name = EXCLUDED.bank_name,
                         bank_branch = EXCLUDED.bank_branch,
-                        bank_account_num = EXCLUDED.bank_account_num,
+                        bank_account_number = EXCLUDED.bank_account_number,
                         is_active = 1;
                     """,
                     (
@@ -44,7 +44,7 @@ def db_save_user(user_id, username, role, data_dict):
                         data_dict.get("id_number"), data_dict.get("phone_number"), 
                         data_dict.get("salary_type"), data_dict.get("base_salary_rate"), 
                         data_dict.get("bank_name"), data_dict.get("bank_branch"), 
-                        data_dict.get("bank_account_num")
+                        data_dict.get("bank_account_number")
                     ),
                 )
             conn.commit()

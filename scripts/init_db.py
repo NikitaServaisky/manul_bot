@@ -23,23 +23,34 @@ def init_db():
         "uploads/temp"       # Temporary directory for processing uploads
     ]
 
+    # Explicitly define the execution order to prevent alphabetical sorting bugs
+    SCHEMA_FILES = [
+        "1_1_users.sql",
+        "1_2_expend_users_table.sql",
+        "1_3users_documents.sql",
+        "02_leads.sql",
+        "03_inventory.sql"
+    ]
+
     for directory in base_dirs:
         if not os.path.exists(directory):
             os.makedirs(directory)
             logger.info(f"📁 Created '{directory}' directory.")
 
-    # Get the sorted list of schema files (01, 02, 03...)
-    schema_files = get_schema_files()
 
-    if not schema_files:
-        logger.warning("⚠️ No SQL schema files found in the schema/ directory.")
+    if not SCHEMA_FILES:
+        logger.warning("⚠️ No SQL schema files defined in SCHEMA_FILES.")
         return
 
     try:
         # Establish connection to PostgreSQL
         with get_db() as conn:
             with conn.cursor() as cur:
-                for file_path in schema_files:
+                
+                for file_name in SCHEMA_FILES:
+                    # English comment: Construct the full path to the schema file
+                    file_path = os.path.join("schema", file_name)
+                    
                     logger.info(f"📜 Executing schema: {file_path}")
 
                     with open(file_path, "r", encoding="utf-8") as f:
@@ -55,7 +66,6 @@ def init_db():
 
     except Exception as e:
         logger.exception(f"❌ Failed to initialize database: {e}")
-
 
 def prepare_employee_directory(user_id):
     """

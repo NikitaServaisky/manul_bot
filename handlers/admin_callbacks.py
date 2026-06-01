@@ -130,21 +130,35 @@ async def process_bank_account(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def process_salary_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 9: Salary type selected via Inline, ask for Rate."""
+    """Step 9: Salary type selected via Inline, ask for Rate clearly and open the reply keyboard."""
     query = update.callback_query
     await query.answer()
     
     salary_type = query.data.split("_")[1]
     context.user_data["pending_salary_type"] = salary_type
     
-    await query.edit_message_text(f"💵 Введите СТАВКУ для типа '{salary_type}':")
+    # 1. English comment: Edit the inline message to remove buttons so the user can't click them again
+    await query.edit_message_text(f"📋 Выбран тип оплаты: {salary_type}")
+    
+    # 2. English comment: Send a fresh message and explicitly open the layout keyboard with the cancel button
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"💵 Введите СТАВКУ (сумму денег) для типа '{salary_type}':\n(Например: 150 или 50.5)",
+        reply_markup=get_user_selector_keyboard()  # הפונקציה שלך שמחזירה את המקלדת עם כפתור ה-🔙 Отмена
+    )
     return WAITING_FOR_RATE
 
 
 async def process_salary_rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 10: Rate received, ask for Role."""
+    """Step 10: Rate received, check for cancel button text, ask for Role."""
+    user_text = update.message.text.strip()
+
+    # Intercept if the user clicks the persistent layout cancel button
+    if user_text == "🔙 Отмена":
+        return await cancel_admin_flow(update, context)
+
     try:
-        context.user_data["pending_rate"] = float(update.message.text)
+        context.user_data["pending_rate"] = float(user_text)
     except ValueError:
         await update.message.reply_text("❌ Введите число (например: 50.5):")
         return WAITING_FOR_RATE
@@ -178,7 +192,7 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         "phone_number": context.user_data.get("pending_phone"),
         "bank_name": context.user_data.get("pending_bank_name"),
         "bank_branch": context.user_data.get("pending_bank_branch"),
-        "bank_account_num": context.user_data.get("pending_bank_account"),
+        "bank_account_number": context.user_data.get("pending_bank_account"),
         "salary_type": context.user_data.get("pending_salary_type"),
         "base_salary_rate": context.user_data.get("pending_rate")
     }

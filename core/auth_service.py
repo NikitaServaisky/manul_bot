@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 # List of fields that require encryption/decryption
 SENSITIVE_FIELDS = [
     "id_number", "phone_number", "salary_type", 
-    "base_salary_rate", "bank_name", "bank_branch", "bank_account_num"
+    "base_salary_rate", "bank_name", "bank_branch", "bank_account_number"
 ]
 
 def _encrypt_payload(kwargs):
