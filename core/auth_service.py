@@ -1,7 +1,8 @@
+import os
 import logging
 from core.security import encrypt_data, decrypt_data
 from core.database.user_repository import db_get_user_by_id, db_save_user
-
+from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 
 # List of fields that require encryption/decryption
@@ -9,6 +10,8 @@ SENSITIVE_FIELDS = [
     "id_number", "phone_number", "salary_type", 
     "base_salary_rate", "bank_name", "bank_branch", "bank_account_number"
 ]
+
+load_dotenv()
 
 def _encrypt_payload(kwargs):
     """ Helper to encrypt sensitive fields before passing to repository."""
@@ -33,6 +36,14 @@ def is_user_authorized(user_id):
     user = db_get_user_by_id(user_id)
     return user is not None and user.get("is_active") == 1
 
+def is_user_admin(user_id):
+    """Checks if the is an active owner/admin."""
+    ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
+    if user_id == ADMIN_ID:
+        return True
+        
+    user = db_get_user_by_id(user_id)
+    return user is not None and user.get("is_active") == 1 and user.get("role") =="owner"
 
 def get_user_role(user_id):
     """Retrieves the user's role."""

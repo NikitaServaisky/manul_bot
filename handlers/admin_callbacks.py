@@ -1,13 +1,12 @@
-import os
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
 from keyboards.inline_keyboards import get_role_selection_keyboard, get_salary_type_keyboard, get_skip_keyboard
-from core.auth_service import add_user
+from core.auth_service import add_user, is_user_admin
 
 logger = logging.getLogger(__name__)
-ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
+
 
 # Import/define states locally for redirection mapping
 (
@@ -38,6 +37,12 @@ async def _handle_optional_input(update: Update, context: ContextTypes.DEFAULT_T
 
 async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 1: Admin selects employee from contacts."""
+    user_id = update.message.from_user.id
+    # The service layer now securely evaluates both .env and DB permissions
+    if not is_user_admin(user_id):
+        await update.message.reply_text("❌ Извините, у вас нет прав для выполнения этого действия.")
+        return ConversationHandler.END
+
     await update.message.reply_text(
         "Нажмите кнопку ниже, чтобы выбрать сотрудника:",
         reply_markup=get_user_selector_keyboard(),
@@ -207,7 +212,7 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Возврат в меню... 🛠️",
-        reply_markup=get_main_menu(admin_id, ADMIN_ID, "owner"),
+        reply_markup=get_main_menu(admin_id),
     )
     context.user_data.clear()
     return ConversationHandler.END

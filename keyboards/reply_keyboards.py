@@ -1,20 +1,25 @@
+import os
 from telegram import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestUsers
+from core.auth_service import get_user_role
 
-
-def get_main_menu(user_id, admin_id, role):
+def get_main_menu(user_id):
     """
     Main menu keyboard logic:
     - Mechanics: Can only create posts.
     - Owners/Admin: Can create posts AND employees
     """
-    # Evryone can create posts
+    # Everyone can create posts
     buttons = [[KeyboardButton("📷 Создать пост")]]
 
+    role = get_user_role(user_id)
+    ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
+
     # Only Owner or Admin see "add employees" button
-    if user_id == admin_id or role == "owner":
+    if user_id == ADMIN_ID or role == "owner":
         buttons.append([KeyboardButton("➕ Добавить сотрудника")])
 
-        return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+    # Out of the IF scope, so mechanics get their layout properly
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 
 def get_user_selector_keyboard():

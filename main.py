@@ -27,7 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Entry point: Checks authorization and shows the correct menu."""
     user_id = update.effective_user.id
     
-    # English comment: Use effective_message to handle both text messages and callbacks safely
+    # Use effective_message to handle both text messages and callbacks safely
     message = update.effective_message
     if not message:
         return
@@ -45,7 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 3. Show Menu
     await message.reply_text(
         "🛠️ Добро пожаловать в Manul Garage!",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, role),
+        reply_markup=get_main_menu(user_id),
     )
 
 
