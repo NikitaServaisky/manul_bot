@@ -9,7 +9,10 @@ def get_main_menu(user_id):
     - Owners/Admin: Can create posts AND employees
     """
     # Everyone can create posts
-    buttons = [[KeyboardButton("📷 Создать пост")]]
+    buttons = [
+        [KeyboardButton("📷 Создать пост")],
+        [KeyboardButton("➕ Добавить автомобиль")]
+    ]
 
     role = get_user_role(user_id)
     ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))

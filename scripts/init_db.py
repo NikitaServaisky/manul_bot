@@ -29,7 +29,8 @@ def init_db():
         "1_2_expend_users_table.sql",
         "1_3users_documents.sql",
         "02_leads.sql",
-        "03_inventory.sql"
+        "03_inventory.sql",
+        "04_costumers_and_vehicles.sql"
     ]
 
     for directory in base_dirs:

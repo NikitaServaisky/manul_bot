@@ -9,6 +9,7 @@ from scripts.init_db import init_db
 from keyboards.reply_keyboards import get_main_menu
 from handlers.admin_handlers import admin_conv
 from handlers.post_handlers import post_conv
+from handlers.vehicle_handlers import vehicle_conv
 from core.auth_service import is_user_authorized, get_user_role
 
 # Load Environment Variables
@@ -62,6 +63,7 @@ def main():
 
     # The Modular Handlers we built
     app.add_handler(admin_conv)  # Employee management flow
+    app.add_handler(vehicle_conv) # Vehicle & Customer management flow
     app.add_handler(post_conv)   # AI Post creation flow
 
     logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
