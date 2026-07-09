@@ -11,6 +11,7 @@ from handlers.admin_handlers import admin_conv
 from handlers.post_handlers import post_conv
 from handlers.vehicle_handlers import vehicle_conv
 from core.auth_service import is_user_authorized, get_user_role
+from scripts.set_admin import seed_admin_user
 
 # Load Environment Variables
 load_dotenv()
@@ -54,6 +55,7 @@ def main():
     """Start the bot."""
     logger.info("📦 Initializing database...")
     init_db()
+    seed_admin_user()
 
     # Create the application
     app = ApplicationBuilder().token(TOKEN).build()
