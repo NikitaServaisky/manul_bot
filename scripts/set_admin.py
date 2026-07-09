@@ -1,6 +1,8 @@
 import os
-from core.database import SessionLocal  # <-- FIXED: Match your actual project layout (e.g., core.database or just database)
-from core.models import User            # <-- FIXED: Match your actual project layout
+
+# Using the exact same module paths your main app uses
+from database import SessionLocal  # If this fails, change to: from core.database.config import SessionLocal (or wherever init_db gets it)
+from models import User            # Using the absolute layout from the root
 
 
 def seed_admin_user():
