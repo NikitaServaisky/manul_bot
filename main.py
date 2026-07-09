@@ -3,12 +3,12 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from dotenv import load_dotenv
-from scripts.init_db import init_db
 
-# Load Environment Variables
+# CRITICAL: Load environment variables BEFORE importing internal modules
 load_dotenv()
 
-# Internal Imports - Bringing everything together
+# Now it's safe to import database and internal handlers
+from scripts.init_db import init_db
 from keyboards.reply_keyboards import get_main_menu
 from handlers.admin_handlers import admin_conv
 from handlers.post_handlers import post_conv
@@ -65,9 +65,9 @@ def main():
     app.add_handler(CommandHandler("start", start))
 
     # The Modular Handlers we built
-    app.add_handler(admin_conv)  # Employee management flow
+    app.add_handler(admin_conv)   # Employee management flow
     app.add_handler(vehicle_conv) # Vehicle & Customer management flow
-    app.add_handler(post_conv)   # AI Post creation flow
+    app.add_handler(post_conv)    # AI Post creation flow
 
     logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
