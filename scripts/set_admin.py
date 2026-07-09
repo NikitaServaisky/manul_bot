@@ -1,13 +1,10 @@
 import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from database import SessionLocal
-from models import User
+from core.database import SessionLocal  # <-- FIXED: Match your actual project layout (e.g., core.database or just database)
+from core.models import User            # <-- FIXED: Match your actual project layout
 
 
 def seed_admin_user():
-    """Checks if the bootstrap Admin exists in the database. If not' creates them."""
+    """Checks if the bootstrap Admin exists in the database. If not, creates them."""
     admin_id_str = os.getenv("TELEGRAM_CHAT_ID")
     if not admin_id_str:
         print("⚠️ TELEGRAM_CHAT_ID not found in .env, skipping admin seeding.")
@@ -21,7 +18,7 @@ def seed_admin_user():
         admin_user = session.query(User).filter(User.telegram_id == admin_tg_id).first()
 
         if not admin_user:
-            print(f"🚀 seeding Admin user (ID: {admin_tg_id}) into the database...")
+            print(f"🚀 Seeding Admin user (ID: {admin_tg_id}) into the database...")
             new_admin = User(
                 telegram_id=admin_tg_id,
                 name="System Admin",
@@ -39,7 +36,5 @@ def seed_admin_user():
         session.close()
 
 
-# Call this function inside your main.py startup workflow
 if __name__ == "__main__":
     seed_admin_user()
-    # ... rest of your bot startup logic (e.g., application.run_polling())
