@@ -89,7 +89,7 @@ async def cancel_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     await update.message.reply_text(
         "Создание поста отменено.",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic"),
+        reply_markup=get_main_menu(user_id),
     )
     return ConversationHandler.END
 
@@ -111,7 +111,7 @@ async def finish_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=user_id,
         text="Чем еще могу помочь?",
-        reply_markup=get_main_menu(user_id, ADMIN_ID, "mechanic"),
+        reply_markup=get_main_menu(user_id),
     )
     return ConversationHandler.END
 
