@@ -24,7 +24,7 @@ def seed_admin_user():
                 name="System Admin",
                 role="owner",  # Setting your role as Owner
             )
-            sessino.add(new_admin)
+            session.add(new_admin)
             session.commit()
             print("✅ Admin user seeded successfully.")
         else:
