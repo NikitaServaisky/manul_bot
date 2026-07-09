@@ -5,6 +5,9 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from dotenv import load_dotenv
 from scripts.init_db import init_db
 
+# Load Environment Variables
+load_dotenv()
+
 # Internal Imports - Bringing everything together
 from keyboards.reply_keyboards import get_main_menu
 from handlers.admin_handlers import admin_conv
@@ -13,8 +16,6 @@ from handlers.vehicle_handlers import vehicle_conv
 from core.auth_service import is_user_authorized, get_user_role
 from scripts.set_admin import seed_admin_user
 
-# Load Environment Variables
-load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
 
