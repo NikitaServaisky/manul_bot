@@ -86,6 +86,7 @@ async def process_engine_code(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.answer()
         await query.edit_message_text("⚙️ Код двигателя: Пропущено")
         msg = query.message
+        extracted_value = "" 
     else:
         user_text = update.message.text.strip()
         if user_text == "🔙 Отмена":
@@ -100,6 +101,11 @@ async def process_engine_code(update: Update, context: ContextTypes.DEFAULT_TYPE
     brand = context.user_data.get("pending_brand")
     model = context.user_data.get("pending_model")
 
+    if not all([plate, cust_name, phone, brand, model]):
+        await msg.reply_text("❌ Ошибка: Некоторые обязательные данные были утеряны. Попробуйте снова.")
+        context.user_data.clear()
+        return ConversationHandler.END
+
     # Call secure Service Layer to process encryption and database insertion
     success = register_customer_and_vehicle(
         full_name=cust_name,
@@ -113,7 +119,7 @@ async def process_engine_code(update: Update, context: ContextTypes.DEFAULT_TYPE
     if success:
         await msg.reply_text(f"✅ Автомобиль {brand} {model} [{plate}] и клиент {cust_name} успешно сохранены!")
     else:
-        await msg.reply_text("❌ Произошла ошибка при сохранении данных в базу.")
+        await msg.reply_text("❌ Произошла ошибка при сохранении данных в базу. Проверьте логи.")
 
     # Redirect securely back to main menu
     await context.bot.send_message(
