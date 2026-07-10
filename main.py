@@ -13,6 +13,8 @@ from keyboards.reply_keyboards import get_main_menu
 from handlers.admin_handlers import admin_conv
 from handlers.post_handlers import post_conv
 from handlers.vehicle_handlers import vehicle_conv
+from handlers.employee_handlers import employee_conv, schedule_handler
+
 from core.auth_service import is_user_authorized, get_user_role
 from scripts.set_admin import seed_admin_user
 
@@ -56,7 +58,9 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(admin_conv)   
     app.add_handler(vehicle_conv) 
-    app.add_handler(post_conv)    
+    app.add_handler(post_conv) 
+    app.add_handler(employee_conv)
+    app.add_handler(schedule_handler)   
 
     logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()

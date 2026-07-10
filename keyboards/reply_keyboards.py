@@ -11,7 +11,8 @@ def get_main_menu(user_id):
     # Everyone can create posts
     buttons = [
         [KeyboardButton("📷 Создать пост")],
-        [KeyboardButton("➕ Добавить автомобиль")]
+        [KeyboardButton("➕ Добавить автомобиль")],
+        [KeyboardButton("💼 Личный кабинет")]
     ]
 
     role = get_user_role(user_id)

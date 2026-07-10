@@ -56,3 +56,22 @@ def get_skip_keyboard(step_name: str):
         InlineKeyboardButton("⏩ Пропустить", callback_data=f"skip_{step_name}")
     ]]
     return InlineKeyboardMarkup(keyboard)
+
+def get_employee_area_keyboard():
+    """
+    Inline keyboard inside the Employee Personal Area.
+    """
+    keyboard = [
+        # View work schedule
+        [InlineKeyboardButton("📅 Мой график (Schedule)", callback_data="emp_schedule")],
+        # Request vacation / Submit sick leave
+        [
+            InlineKeyboardButton("🏖️ Запросить отпуск", callback_data="emp_vacation"),
+            InlineKeyboardButton("🤒 Больничный (Sick)", callback_data="emp_sick")
+        ],
+        # Upload general documents (e.g., Form 101)
+        [InlineKeyboardButton("📁 Загрузить документы (Form 101)", callback_data="emp_upload_doc")],
+        # Submit shifts / availability for next week
+        [InlineKeyboardButton("✍️ Подать смены (Submit Shifts)", callback_data="emp_submit_shifts")]
+    ]
+    return InlineKeyboardMarkup(keyboard)

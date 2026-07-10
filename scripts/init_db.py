@@ -30,7 +30,10 @@ def init_db():
         "1_3users_documents.sql",
         "02_leads.sql",
         "03_inventory.sql",
-        "04_costumers_and_vehicles.sql"
+        "04_costumers_and_vehicles.sql",
+        "05_vacation_requests.sql",
+        "06_shift_submission.sql",
+        "07_work_schedule.sql"
     ]
 
     for directory in base_dirs:
