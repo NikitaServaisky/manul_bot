@@ -13,16 +13,16 @@ def seed_admin_user():
     try:
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id FROM users WHERE telegram_id = %s;", (admin_tg_id,))
+                cur.execute("SELECT user_id FROM users WHERE user_id = %s;", (admin_tg_id,))
                 admin_user = cur.fetchone()
 
                 if not admin_user:
                     print(f"🚀 Seeding Admin user (ID: {admin_tg_id}) into PostgreSQL...")
                     
                     cur.execute("""
-                        INSERT INTO users (telegram_id, name, role)
-                        VALUES (%s, %s, %s);
-                    """, (admin_tg_id, "System Admin", "owner"))
+                        INSERT INTO users (user_id, username, role, is_active)
+                        VALUES (%s, %s, %s, %s);
+                    """, (admin_tg_id, "admin", "owner", 1))
                     
                     conn.commit()
                     print("✅ Admin user seeded successfully.")
