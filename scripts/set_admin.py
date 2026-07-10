@@ -1,9 +1,5 @@
 import os
-
-# Using the exact same module paths your main app uses
-from database import SessionLocal  # If this fails, change to: from core.database.config import SessionLocal (or wherever init_db gets it)
-from models import User            # Using the absolute layout from the root
-
+from core.database import get_db
 
 def seed_admin_user():
     """Checks if the bootstrap Admin exists in the database. If not, creates them."""
@@ -13,30 +9,28 @@ def seed_admin_user():
         return
 
     admin_tg_id = int(admin_id_str)
-    session = SessionLocal()
 
     try:
-        # Check if this Telegram ID already exists in the users table
-        admin_user = session.query(User).filter(User.telegram_id == admin_tg_id).first()
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE telegram_id = %s;", (admin_tg_id,))
+                admin_user = cur.fetchone()
 
-        if not admin_user:
-            print(f"🚀 Seeding Admin user (ID: {admin_tg_id}) into the database...")
-            new_admin = User(
-                telegram_id=admin_tg_id,
-                name="System Admin",
-                role="owner",  # Setting your role as Owner
-            )
-            session.add(new_admin)
-            session.commit()
-            print("✅ Admin user seeded successfully.")
-        else:
-            print("ℹ️ Admin user already exists in the database.")
+                if not admin_user:
+                    print(f"🚀 Seeding Admin user (ID: {admin_tg_id}) into PostgreSQL...")
+                    
+                    cur.execute("""
+                        INSERT INTO users (telegram_id, name, role)
+                        VALUES (%s, %s, %s);
+                    """, (admin_tg_id, "System Admin", "owner"))
+                    
+                    conn.commit()
+                    print("✅ Admin user seeded successfully.")
+                else:
+                    print("ℹ️ Admin user already exists in the database.")
+                    
     except Exception as e:
-        session.rollback()
         print(f"❌ Error during admin seeding: {e}")
-    finally:
-        session.close()
-
 
 if __name__ == "__main__":
     seed_admin_user()
