@@ -1,19 +1,20 @@
 import os
 import logging
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
-# CRITICAL: Load environment variables BEFORE importing internal modules
 load_dotenv()
 
-# Now it's safe to import database and internal handlers
 from scripts.init_db import init_db
 from keyboards.reply_keyboards import get_main_menu
 from handlers.admin_handlers import admin_conv
 from handlers.post_handlers import post_conv
 from handlers.vehicle_handlers import vehicle_conv
-from handlers.employee_handlers import employee_conv, schedule_handler
+
+# Import your targets safely
+from handlers.employee_handlers import employee_conv, schedule_handler, open_personal_cabinet
+from handlers.manager_handlers import manager_handlers, open_manager_cabinet
 
 from core.auth_service import is_user_authorized, get_user_role
 from scripts.set_admin import seed_admin_user
@@ -21,7 +22,6 @@ from scripts.set_admin import seed_admin_user
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
 
-# Logging Setup
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
@@ -47,6 +47,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def cabinet_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    CRITICAL ROUTER: Intercepts the main cabinet reply-button press 
+    and securely routes based on actual real-time database role.
+    """
+    user_id = update.effective_user.id
+    user_role = get_user_role(user_id)
+
+    # Route immediately to manager flow if privileged (Stays out of employee conversation)
+    if user_role in ['admin', 'manager', 'owner']:
+        await open_manager_cabinet(update, context)
+        return
+
+    # Otherwise execute employee menu structure cleanly
+    await open_personal_cabinet(update, context)
+
+
 def main():
     """Start the bot."""
     logger.info("📦 Initializing database...")
@@ -54,13 +71,23 @@ def main():
     seed_admin_user()
 
     app = ApplicationBuilder().token(TOKEN).build()
-
+    
+    # 1. Global Command Handlers
     app.add_handler(CommandHandler("start", start))
+
+    # 2. Central Router for Reply Keyboard Menus (Takes priority over general text matching)
+    app.add_handler(MessageHandler(filters.Text("💼 Личный кабинет"), cabinet_router))
+
+    # 3. Manager/Admin inline response array
+    for handler in manager_handlers:
+        app.add_handler(handler)
+
+    # 4. Conversations & Sub-workflows
+    app.add_handler(employee_conv)
+    app.add_handler(schedule_handler)
     app.add_handler(admin_conv)   
     app.add_handler(vehicle_conv) 
     app.add_handler(post_conv) 
-    app.add_handler(employee_conv)
-    app.add_handler(schedule_handler)   
 
     logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
     app.run_polling()
