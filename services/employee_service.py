@@ -48,3 +48,18 @@ def log_user_document(user_id: int, doc_type: str, path: str, name: str, size: i
             doc_id = cursor.fetchone()[0]
             conn.commit()
             return doc_id
+
+def save_shift_submission(user_id: int, shift_date: date, preference: str, notes: str = None):
+    """
+    Inserts or update an employee's availability for a spesific date.
+    """
+    query = """
+        INSERT INTO shift_submissions (user_id, shift_date, preference, user_note)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (user_id, shift_date)
+        DO UPDATE SET preference = EXCLUDED.preference, user_note = EXCLUDED.user_note;
+    """
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (user_id, shift_date, preference, notes))
+            conn.commit()
