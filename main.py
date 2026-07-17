@@ -1,97 +1,102 @@
-import os
 import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from dotenv import load_dotenv
+from core.database import get_db
+from psycopg2.extras import RealDictCursor
 
-load_dotenv()
-
-from scripts.init_db import init_db
-from keyboards.reply_keyboards import get_main_menu
-from handlers.admin_handlers import admin_conv
-from handlers.post_handlers import post_conv
-from handlers.vehicle_handlers import vehicle_conv
-
-# Import your targets safely
-from handlers.employee_handlers import employee_conv, schedule_handler, open_personal_cabinet
-from handlers.manager_handlers import manager_handlers, open_manager_cabinet
-
-from core.auth_service import is_user_authorized, get_user_role
-from scripts.set_admin import seed_admin_user
-
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
+def db_get_user_by_id(user_id):
+    """Fetches a raw user row from the database by user_id."""
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+                return cur.fetchone()
+    except Exception as e:
+        logger.exception(f"DB Error fetching user {user_id}: {e}")
+        return None
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Entry point: Checks authorization and shows the correct menu."""
-    user_id = update.effective_user.id
-    message = update.effective_message
-    if not message:
-        return
-
-    authorized = (user_id == ADMIN_ID) or is_user_authorized(user_id)
-
-    if not authorized:
-        await message.reply_text("❌ Нет доступа. Обратитесь к администратору.")
-        return
-
-    await message.reply_text(
-        "🛠️ Добро пожаловать в Manul Garage!",
-        reply_markup=get_main_menu(user_id),
-    )
-
-
-async def cabinet_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    CRITICAL ROUTER: Intercepts the main cabinet reply-button press 
-    and securely routes based on actual real-time database role.
-    """
-    user_id = update.effective_user.id
-    user_role = get_user_role(user_id)
-
-    # Route immediately to manager flow if privileged (Stays out of employee conversation)
-    if user_role in ['admin', 'manager', 'owner']:
-        await open_manager_cabinet(update, context)
-        return
-
-    # Otherwise execute employee menu structure cleanly
-    await open_personal_cabinet(update, context)
-
-
-def main():
-    """Start the bot."""
-    logger.info("📦 Initializing database...")
-    init_db()
-    seed_admin_user()
-
-    app = ApplicationBuilder().token(TOKEN).build()
+def db_save_user(user_id: int, username: str, role: str, encrypted_data: dict):
+    """Saves or updates a complete user record dynamically based on existence of user_id."""
+    encrypted_phone = encrypted_data.get("phone_number")
     
-    # 1. Global Command Handlers
-    app.add_handler(CommandHandler("start", start))
+    # If no telegram user_id is provided yet (pre-registration case)
+    if not user_id:
+        # Avoid explicit NULL injection into uniqueness-constrained fields if architectural limits exist
+        query = """
+            INSERT INTO users (
+                username, role, id_number, phone_number, 
+                salary_type, base_salary_rate, bank_name, bank_branch, bank_account_number, is_active
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+            ON CONFLICT (phone_number) DO UPDATE SET
+                username = EXCLUDED.username,
+                role = EXCLUDED.role,
+                id_number = EXCLUDED.id_number,
+                salary_type = EXCLUDED.salary_type,
+                base_salary_rate = EXCLUDED.base_salary_rate,
+                bank_name = EXCLUDED.bank_name,
+                bank_branch = EXCLUDED.bank_branch,
+                bank_account_number = EXCLUDED.bank_account_number;
+        """
+        params = (
+            username, role, encrypted_data.get("id_number"), encrypted_phone,
+            encrypted_data.get("salary_type"), encrypted_data.get("base_salary_rate"),
+            encrypted_data.get("bank_name"), encrypted_data.get("bank_branch"), encrypted_data.get("bank_account_number")
+        )
+    else:
+        # Standard conflict resolution using primary telegram user_id key or matching phone constraints
+        query = """
+            INSERT INTO users (
+                user_id, username, role, id_number, phone_number, 
+                salary_type, base_salary_rate, bank_name, bank_branch, bank_account_number, is_active
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+            ON CONFLICT (user_id) DO UPDATE SET
+                username = EXCLUDED.username,
+                role = EXCLUDED.role,
+                id_number = EXCLUDED.id_number,
+                phone_number = EXCLUDED.phone_number,
+                salary_type = EXCLUDED.salary_type,
+                base_salary_rate = EXCLUDED.base_salary_rate,
+                bank_name = EXCLUDED.bank_name,
+                bank_branch = EXCLUDED.bank_branch,
+                bank_account_number = EXCLUDED.bank_account_number;
+        """
+        params = (
+            user_id, username, role, encrypted_data.get("id_number"), encrypted_phone,
+            encrypted_data.get("salary_type"), encrypted_data.get("base_salary_rate"),
+            encrypted_data.get("bank_name"), encrypted_data.get("bank_branch"), encrypted_data.get("bank_account_number")
+        )
+    
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, params)
+            conn.commit()
 
-    # 2. Central Router for Reply Keyboard Menus (Takes priority over general text matching)
-    app.add_handler(MessageHandler(filters.Text("💼 Личный кабинет"), cabinet_router))
+def db_get_all_users():
+    """Fetches all users from the database for phone verification scanning."""
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users")
+                return cur.fetchall()
+    except Exception as e:
+        logger.exception(f"DB Error fetching all users: {e}")
+        return []
 
-    # 3. Manager/Admin inline response array
-    for handler in manager_handlers:
-        app.add_handler(handler)
-
-    # 4. Conversations & Sub-workflows
-    app.add_handler(employee_conv)
-    app.add_handler(schedule_handler)
-    app.add_handler(admin_conv)   
-    app.add_handler(vehicle_conv) 
-    app.add_handler(post_conv) 
-
-    logger.info("🚀 Manul Garage Bot is LIVE (Clean Architecture)")
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
+def db_link_telegram_to_user(encrypted_phone: str, telegram_id: int, username: str):
+    """Links a Telegram account infrastructure profile to an existing pre-registered record via encrypted phone."""
+    query = """
+        UPDATE users 
+        SET user_id = %s, username = %s, is_active = 1
+        WHERE phone_number = %s;
+    """
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (telegram_id, username, encrypted_phone))
+                conn.commit()
+                return True
+    except Exception as e:
+        logger.exception(f"DB Error linking telegram ID to encrypted phone instance: {e}")
+        return False
