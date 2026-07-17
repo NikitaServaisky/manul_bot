@@ -3,7 +3,11 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, CommandHandler, filters, ContextTypes
 
-from keyboards.inline_keyboards import get_employee_area_keyboard
+from keyboards.inline_keyboards import (
+    get_employee_area_keyboard, 
+    get_employee_vacation_confirm_keyboard,
+    get_manager_vacation_approval_keyboard
+)
 from services.employee_service import fetch_employee_schedule, create_vacation_request, log_user_document, save_shift_submission
 
 (
@@ -12,7 +16,8 @@ from services.employee_service import fetch_employee_schedule, create_vacation_r
     WAITING_SICK_LEAVE_DOC,
     WAITING_GENERAL_DOC,
     WAITING_SHIFTS_INPUT,
-) = range(5)
+    WAITING_VACATION_CONFIRM,
+) = range(6)
 
 async def open_personal_cabinet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Entry point for employees. Reached ONLY after role verification in main router."""
@@ -75,12 +80,26 @@ async def process_vacation_end(update: Update, context: ContextTypes.DEFAULT_TYP
             return WAITING_VACATION_END
             
         total_days = (end_date - start_date).days + 1
-        user_id = update.effective_user.id
         
-        create_vacation_request(user_id, "vacation", start_date, end_date, float(total_days))
+        context.user_data["vacation_end"] = end_date
+        context.user_data["vacation_total_days"] = float(total_days)
         
-        await update.message.reply_text(f"✅ Запрос на отпуск успешно отправлен!\n📅 Период: {start_date} - {end_date} ({total_days} дней).\nОжидайте одобрения владельца.")
-        return ConversationHandler.END
+        # תרגום הודעת הסיכום לרוסית עבור העובד
+        summary_text = (
+            f"📊 **Резюме вашего запроса на отпуск:**\n"
+            f"• Дата начала: {start_date}\n"
+            f"• Дата окончания: {end_date}\n"
+            f"• Всего дней: {total_days}\n\n"
+            f"Данные верны? Отправить запрос менеджеру на утверждение?"
+        )
+        
+        await update.message.reply_text(
+            summary_text, 
+            reply_markup=get_employee_vacation_confirm_keyboard(), 
+            parse_mode="Markdown"
+        )
+        return WAITING_VACATION_CONFIRM
+        
     except ValueError:
         await update.message.reply_text("❌ Неверный формат. Пожалуйста, используйте YYYY-MM-DD:")
         return WAITING_VACATION_END
@@ -124,6 +143,50 @@ async def handle_file_upload(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     await update.message.reply_text("✅ Документ успешно загружен и отправлен на проверку администратору!")
     return ConversationHandler.END
+
+async def handle_vacation_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    action = query.data
+    user_id = update.effective_user.id
+    username = update.effective_user.full_name
+    
+    if action == "vact_confirm_cancel":
+        await query.message.edit_text("❌ Запрос отменен.")
+        return ConversationHandler.END
+        
+    elif action == "vact_confirm_edit":
+        await query.message.edit_text("📅 Введите дату начала отпуска в формате YYYY-MM-DD:\n(Или нажмите /cancel для отмены)")
+        return WAITING_VACATION_START
+        
+    elif action == "vact_confirm_send":
+        start_date = context.user_data.get("vacation_start")
+        end_date = context.user_data.get("vacation_end")
+        total_days = context.user_data.get("vacation_total_days")
+        
+        req_id = create_vacation_request(user_id, "vacation", start_date, end_date, total_days)
+        
+        await query.message.edit_text("⏳ Запрос отправлен менеджеру и ожидает подтверждения.")
+        
+        ADMIN_ID = int(os.getenv("TELEGRAM_CHAT_ID", 0))
+        if ADMIN_ID:
+            # הודעה למנהל ברוסית
+            manager_text = (
+                f"🔔 **Новый запрос на отпуск ожидает подтверждения!**\n"
+                f"• Сотрудник: {username} (ID: {user_id})\n"
+                f"• Дата начала: {start_date}\n"
+                f"• Дата окончания: {end_date}\n"
+                f"• Всего дней: {total_days}"
+            )
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=manager_text,
+                reply_markup=get_manager_vacation_approval_keyboard(req_id),
+                parse_mode="Markdown"
+            )
+            
+        return ConversationHandler.END
 
 # ==================== SUBMIT SHIFTS FLOW ====================
 async def start_shifts_submission(update: Update, context: ContextTypes.DEFAULT_TYPE):

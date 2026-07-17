@@ -19,20 +19,39 @@ def fetch_employee_schedule(user_id: int, start_date: date, end_date: date):
             cursor.execute(query, (user_id, start_date, end_date))
             return cursor.fetchall()
 
-def create_vacation_request(user_id: int, req_type: str, start: date, end: date, days: float, notes: str = None):
-    """
-    Inserts a new leave request (vacation/sick).
-    """
+from core.database import get_db
+
+def create_vacation_request(user_id: int, req_type: str, start_date, end_date, total_days: float) -> int:
+    """Inserts a vacation request into PostgreSQL and returns the generated request ID."""
     query = """
-        INSERT INTO vacation_requests (user_id, request_type, start_date, end_date, total_days, user_notes)
-        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
+        INSERT INTO vacation_requests (user_id, request_type, start_date, end_date, total_days, status)
+        VALUES (%s, %s, %s, %s, %s, 'Pending')
+        RETURNING id;
     """
-    with get_db() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(query, (user_id, req_type, start, end, days, notes))
-            req_id = cursor.fetchone()[0]
-            conn.commit()
-            return req_id
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (user_id, req_type, start_date, end_date, total_days))
+                result = cur.fetchone()
+                conn.commit()
+                return result[0] if result else 0
+    except Exception as e:
+        print(f"Error creating vacation request: {e}")
+        return 0
+
+def update_vacation_status(request_id: int, status: str):
+    """Updates the status of a specific vacation request (Approved / Rejected)."""
+    query = "UPDATE vacation_requests SET status = %s WHERE id = %s RETURNING user_id, start_date, end_date;"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (status, request_id))
+                result = cur.fetchone()
+                conn.commit()
+                return result # Returns (user_id, start_date, end_date)
+    except Exception as e:
+        print(f"Error updating vacation status: {e}")
+        return None
 
 def log_user_document(user_id: int, doc_type: str, path: str, name: str, size: int):
     """

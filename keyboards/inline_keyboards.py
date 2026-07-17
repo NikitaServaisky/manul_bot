@@ -75,3 +75,26 @@ def get_employee_area_keyboard():
         [InlineKeyboardButton("✍️ Подать смены (Submit Shifts)", callback_data="emp_submit_shifts")]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+def get_employee_vacation_confirm_keyboard():
+    """Buttons for the employee to review before sending to the manager."""
+    keyboard = [
+        [
+            InlineKeyboardButton("📤 Отправить менеджеру", callback_data="vact_confirm_send"),
+            InlineKeyboardButton("✏️ Изменить данные", callback_data="vact_confirm_edit")
+        ],
+        [InlineKeyboardButton("❌ Отмена", callback_data="vact_confirm_cancel")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def get_manager_vacation_approval_keyboard(request_id: int):
+    """Buttons for the manager to approve or reject a specific vacation ID."""
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Одобрить отпуск", callback_data=f"vact_mgr_approve_{request_id}"),
+            InlineKeyboardButton("❌ Отклонить", callback_data=f"vact_mgr_reject_{request_id}")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
