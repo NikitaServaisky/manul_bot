@@ -29,6 +29,7 @@ services:
       - .:/app
       - ./uploads:/app/uploads
     command: ["python", "main.py"]
+    network_mode: "host"
 
   manul-hunter:
     build: .
