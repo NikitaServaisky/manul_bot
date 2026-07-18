@@ -13,6 +13,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - manul_network
 
   manul-bot:
     build: .
@@ -29,7 +31,8 @@ services:
       - .:/app
       - ./uploads:/app/uploads
     command: ["python", "main.py"]
-    network_mode: "host"
+    networks:
+      - manul_network
 
   manul-hunter:
     build: .
@@ -45,6 +48,12 @@ services:
     volumes:
       - .:/app
     command: ["python", "scripts/hunter.py"]
+    networks:
+      - manul_network
 
 volumes:
   postgres_data:
+
+networks:
+  manul_network:
+    driver: bridge
