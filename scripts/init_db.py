@@ -32,7 +32,7 @@ def init_db():
         "03_inventory.sql",
         "04_costumers_and_vehicles.sql",
         "05_vacation_requests.sql",
-        "06_shift_submission.sql",
+        "06_shift_submissions.sql",
         "07_work_schedule.sql"
     ]
 
