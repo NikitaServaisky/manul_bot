@@ -22,6 +22,9 @@ services:
     restart: always
     depends_on:
       - db
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file: .env
     environment:
       - TZ=Asia/Jerusalem
@@ -40,6 +43,9 @@ services:
     restart: always
     depends_on:
       - db
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file: .env
     environment:
       - TZ=Asia/Jerusalem
