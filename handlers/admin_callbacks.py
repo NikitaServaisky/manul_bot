@@ -51,37 +51,66 @@ async def start_add_user_flow(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def process_user_shared(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 2: ID extracted, ask for Name."""
-    shared_data = update.message.users_shared or update.message.user_shared
-    target_id = None
+    """Step 2: Extract ID (and optionally phone/name if sent via Contact), then ask for Name."""
+    
+    # 1. Native Telegram Contact sharing
+    if update.message.contact:
+        contact = update.message.contact
+        context.user_data["pending_id"] = contact.user_id
+        
+        # Pre-fill phone into state if available
+        if contact.phone_number:
+            context.user_data["pending_phone"] = contact.phone_number
+            
+        # Extract full name safely
+        full_name = f'{contact.first_name or ""} {contact.last_name or ""}'.strip()
+        if full_name:
+            context.user_data["pending_name"] = full_name
+            await update.message.reply_text(
+                f"👤 Извлечено имя: {full_name}\n"
+                f"📞 Извлечён номер: {contact.phone_number or 'Не указан'}\n\n"
+                f"📝 Подтвердите или введите ИМЯ и ФАМИЛИЮ заново:"
+            )
+            return WAITING_FOR_NAME
 
+    # 2. UsersShared request button
+    shared_data = update.message.users_shared or update.message.user_shared
     if shared_data:
         if hasattr(shared_data, "users") and shared_data.users:
-            target_id = shared_data.users[0].user_id
+            context.user_data["pending_id"] = shared_data.users[0].user_id
         elif hasattr(shared_data, "user_id"):
-            target_id = shared_data.user_id
+            context.user_data["pending_id"] = shared_data.user_id
 
-    if not target_id:
+    if not context.user_data.get("pending_id"):
         await update.message.reply_text("❌ Ошибка получения ID.")
         return ADDING_USER_FLOW
 
-    context.user_data["pending_id"] = target_id
     await update.message.reply_text("📝 Введите ИМЯ и ФАМИЛИЮ сотрудника:")
     return WAITING_FOR_NAME
 
 
 async def process_user_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Step 3: Name received, ask for ID Number."""
-    context.user_data["pending_name"] = update.message.text
+    context.user_data["pending_name"] = update.message.text.strip()
     await update.message.reply_text("🪪 Введите НОМЕР УДОСТОВЕРЕНИЯ (ID):")
     return WAITING_FOR_ID
 
 
 async def process_user_id_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Step 4: ID Number received (Required), ask for Phone (Optional)."""
-    context.user_data["pending_id_num"] = update.message.text
+    """Step 4: ID Number received (Required), ask for Phone (or skip to Bank if already collected)."""
+    context.user_data["pending_id_num"] = update.message.text.strip()
     
-    # Provide a skip button for the phone number step
+    # If phone was already extracted during step 2 (Contact sharing), jump straight to Bank Name
+    if context.user_data.get("pending_phone"):
+        phone = context.user_data["pending_phone"]
+        await update.message.reply_text(
+            f"📞 Номер телефона уже сохранен ({phone}).\n"
+            f"🏦 Введите НАЗВАНИЕ БАНКА (или нажмите Пропустить):",
+            reply_markup=get_skip_keyboard("bank")
+        )
+        return WAITING_FOR_BANK_NAME
+
+    # Otherwise request phone input with skip option
     await update.message.reply_text(
         "📞 Введите НОМЕР ТЕЛЕФОНА (или нажмите Пропустить):",
         reply_markup=get_skip_keyboard("phone")    
@@ -126,7 +155,6 @@ async def process_bank_account(update: Update, context: ContextTypes.DEFAULT_TYP
     """Step 8: Handle Account input (text or skip) and ask for Salary Type (Required)."""
     msg = await _handle_optional_input(update, context, "bank_account")
     
-    # Back to mandatory steps, show your optimized salary keyboard
     await msg.reply_text(
         "💰 Выберите ТИП ОПЛАТЫ:",
         reply_markup=get_salary_type_keyboard()
@@ -142,14 +170,14 @@ async def process_salary_type(update: Update, context: ContextTypes.DEFAULT_TYPE
     salary_type = query.data.split("_")[1]
     context.user_data["pending_salary_type"] = salary_type
     
-    # 1. English comment: Edit the inline message to remove buttons so the user can't click them again
+    # Edit the inline message to remove buttons so the user cannot click them again
     await query.edit_message_text(f"📋 Выбран тип оплаты: {salary_type}")
     
-    # 2. English comment: Send a fresh message and explicitly open the layout keyboard with the cancel button
+    # Send a fresh message and explicitly open the layout keyboard with the cancel button
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"💵 Введите СТАВКУ (сумму денег) для типа '{salary_type}':\n(Например: 150 или 50.5)",
-        reply_markup=get_user_selector_keyboard()  # הפונקציה שלך שמחזירה את המקלדת עם כפתור ה-🔙 Отмена
+        reply_markup=get_user_selector_keyboard()
     )
     return WAITING_FOR_RATE
 
@@ -183,7 +211,8 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
 
     data = query.data.split("_")
-    if data[0] != "setrole": return
+    if data[0] != "setrole": 
+        return
 
     target_id = int(data[1])
     role = data[2]
@@ -203,8 +232,14 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     }
 
     try:
-        add_user(**user_data)
-        await query.edit_message_text(f"✅ Сотрудник {user_data['username']} успешно добавлен!")
+        # Capture the returned ID from service layer execution
+        saved_db_id = add_user(**user_data)
+        
+        if saved_db_id and saved_db_id > 0:
+            await query.edit_message_text(f"✅ Сотрудник {user_data['username']} успешно добавлен!")
+        else:
+            await query.edit_message_text("❌ Ошибка: Не удалось сохранить пользователя в базу данных (Constraint Violation).")
+
     except Exception as e:
         logger.exception(f"❌ DB ERROR: {e}")
         await query.edit_message_text("❌ Ошибка при сохранении в базу данных.")
