@@ -26,7 +26,7 @@ def create_vacation_request(user_id: int, req_type: str, start_date, end_date, t
     query = """
         INSERT INTO vacation_requests (user_id, request_type, start_date, end_date, total_days, status)
         VALUES (%s, %s, %s, %s, %s, 'Pending')
-        RETURNING id;
+        RETURNING user_id;
     """
     try:
         with get_db() as conn:

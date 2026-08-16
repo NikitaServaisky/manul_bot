@@ -65,7 +65,7 @@ def db_save_user(db_id: int, user_id: int, username: str, role: str, encrypted_d
                 bank_account_number = %s,
                 is_active = 1
             WHERE id = %s
-            RETURNING id;
+            RETURNING user_id;
         """
         params = (
             user_id, username, role, encrypted_data.get("id_number"), encrypted_phone,
@@ -92,7 +92,7 @@ def db_save_user(db_id: int, user_id: int, username: str, role: str, encrypted_d
                 bank_branch = EXCLUDED.bank_branch,
                 bank_account_number = EXCLUDED.bank_account_number,
                 is_active = 1
-            RETURNING id;
+            RETURNING user_id;
         """
         params = (
             user_id, username, role, encrypted_data.get("id_number"), encrypted_phone,
@@ -118,7 +118,7 @@ def db_save_user(db_id: int, user_id: int, username: str, role: str, encrypted_d
                 bank_branch = EXCLUDED.bank_branch,
                 bank_account_number = EXCLUDED.bank_account_number,
                 is_active = 1
-            RETURNING id;
+            RETURNING user_id;
         """
         params = (
             username, role, encrypted_data.get("id_number"), encrypted_phone,
