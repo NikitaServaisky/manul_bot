@@ -28,10 +28,15 @@ async def _handle_optional_input(update: Update, context: ContextTypes.DEFAULT_T
         extracted_value = None
         msg = query.message
     else:
-        extracted_value = update.message.text
+        extracted_value = update.message.text if update.message.text else None
         msg = update.message
 
-    context.user_data[f"pending_{field_name}"] = extracted_value
+    # If the user typed text save it, if pushed skip, keep whitout changes or save None
+    if extracted_value is not None:
+        context.user_data[f'pending_{field_name}'] = extracted_value
+    elif f'pending_{field_name}' not in context.user_data:
+        context.user_data[f'pending_{field_name}'] = None
+
     return msg
 
 
@@ -209,6 +214,12 @@ async def handel_role_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     admin_id = update.effective_user.id
     await query.answer()
+
+    # handle of click cancel
+    if query.data == "cancel_admin":
+        await query.edit_message_text("❌ Действие отменено.")
+        context.user_data.clear()
+        return ConversationHandler.END
 
     data = query.data.split("_")
     if data[0] != "setrole": 
