@@ -8,13 +8,13 @@ load_dotenv()
 
 from scripts.init_db import init_db
 from src.bot.keyboards.reply import get_main_menu
-from handlers.admin_handlers import admin_conv
-from handlers.post_handlers import post_conv
-from handlers.vehicle_handlers import vehicle_conv
+from src.bot.handlers.admin import admin_conv
+from src.bot.handlers.post_handlers import post_conv
+from src.bot.handlers.vehicle_handlers import vehicle_conv
 
 # Import your targets safely
-from handlers.employee_handlers import employee_conv, schedule_handler, open_personal_cabinet
-from handlers.manager_handlers import manager_handlers, open_manager_cabinet
+from src.bot.handlers.employee_handlers import employee_conv, schedule_handler, open_personal_cabinet
+from src.bot.handlers.manager_handlers import manager_handlers, open_manager_cabinet
 
 from src.core.auth_service import is_user_authorized, get_user_role
 from scripts.set_admin import seed_admin_user
