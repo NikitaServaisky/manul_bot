@@ -1,6 +1,6 @@
 import logging
 import psycopg2
-from src.database.user_repository import get_db
+from src.database.connection import get_db
 from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger(__name__)

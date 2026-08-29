@@ -1,6 +1,6 @@
 import os
 import logging
-from src.database.user_repository import get_db
+from src.database.connection import get_db
 from src.database.get_schema_files import get_schema_files
 
 # Logger setup for this file
