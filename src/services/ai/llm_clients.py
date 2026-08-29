@@ -1,6 +1,6 @@
 import logging
 from google.genai import types
-from core.ai_clients import gemini, groq
+from src.services.ai.clients import gemini, groq
 
 # Set logger for catch logs
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from core.database import get_db
+from src.database.user_repository import get_db
 
 # Setup logger for this file
 logger = logging.getLogger(__name__)

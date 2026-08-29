@@ -1,6 +1,6 @@
 import logging
-from services.lead_service import check_and_save_lead
-from core.database import get_db
+from src.services.lead_service import check_and_save_lead
+from src.database.user_repository import get_db
 
 # Configure logging for test output
 logging.basicConfig(level=logging.INFO, format="%(message)s")

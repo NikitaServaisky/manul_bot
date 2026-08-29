@@ -2,9 +2,9 @@ import time
 import random
 import logging
 from datetime import datetime
-from core.utils import load_list
-from services.scrapper_services import get_facebook_posts
-from services.lead_service import check_and_save_lead
+from src.utils.helpers import load_list
+from src.services.scrapers.scraper import get_facebook_posts
+from src.services.lead_service import check_and_save_lead
 
 # Logger Setup for this file
 logger = logging.getLogger(__name__)

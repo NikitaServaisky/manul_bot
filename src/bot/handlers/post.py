@@ -12,10 +12,10 @@ from telegram.ext import (
 )
 
 # Internal Imports
-from keyboards.reply_keyboards import get_main_menu
-from keyboards.inline_keyboards import get_post_confirmation_keyboard
-from services.ai_logic import analyze_mechanic_work
-from core.utils import create_facebook_deep_link
+from src.bot.keyboards.reply import get_main_menu
+from src.bot.keyboards.inline import get_post_confirmation_keyboard
+from src.services.ai.logic import analyze_mechanic_work
+from src.utils.helpers import create_facebook_deep_link
 
 # States for the Post Conversation
 WAITING_FOR_CONTENT = 1

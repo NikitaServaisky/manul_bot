@@ -1,6 +1,6 @@
 import os
 import logging
-from core.ai_clients import groq, gemini
+from src.services.ai.clients import groq, gemini
 from PIL import Image
 
 # Setup logging

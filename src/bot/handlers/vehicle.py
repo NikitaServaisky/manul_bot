@@ -1,10 +1,10 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
-from keyboards.inline_keyboards import get_skip_keyboard
-from core.customer_service import register_customer_and_vehicle
-from core.auth_service import is_user_authorized
+from src.bot.keyboards.reply import get_main_menu, get_user_selector_keyboard
+from src.bot.keyboards.inline import get_skip_keyboard
+from src.services.customer_service import register_customer_and_vehicle
+from src.core.auth_service import is_user_authorized
 
 logger = logging.getLogger(__name__)
 

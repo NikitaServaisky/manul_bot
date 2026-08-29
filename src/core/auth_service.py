@@ -1,7 +1,7 @@
 import os
 import logging
-from core.security import encrypt_data, decrypt_data
-from core.database.user_repository import (
+from src.core.security import encrypt_data, decrypt_data
+from src.database.user_repository import (
     db_get_user_by_id, 
     db_save_user, 
     db_get_pending_users, 

@@ -1,6 +1,6 @@
 import os
 from telegram import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonRequestUsers
-from core.auth_service import get_user_role
+from src.core.auth_service import get_user_role
 
 def get_main_menu(user_id):
     """

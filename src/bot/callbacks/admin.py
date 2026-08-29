@@ -1,9 +1,9 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
-from keyboards.reply_keyboards import get_main_menu, get_user_selector_keyboard
-from keyboards.inline_keyboards import get_role_selection_keyboard, get_salary_type_keyboard, get_skip_keyboard
-from core.auth_service import add_user, is_user_admin
+from src.bot.keyboards.reply import get_main_menu, get_user_selector_keyboard
+from src.bot.keyboards.inline import get_role_selection_keyboard, get_salary_type_keyboard, get_skip_keyboard
+from src.core.auth_service import add_user, is_user_admin
 
 logger = logging.getLogger(__name__)
 

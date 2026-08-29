@@ -1,7 +1,7 @@
 import os
-from core.auth_service import add_user, is_user_authorized, get_user_role
-from services.ai_logic import analyze_mechanic_work
-from core.database import get_db
+from src.core.auth_service import add_user, is_user_authorized, get_user_role
+from src.services.ai.logic import analyze_mechanic_work
+from src.database.user_repository import get_db
 
 
 def test_full_flow():

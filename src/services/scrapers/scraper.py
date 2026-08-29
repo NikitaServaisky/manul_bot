@@ -1,6 +1,6 @@
 import logging
-from core.apify_client import apify
-from core.facebook_cookies import load_facebook_cookies
+from src.services.scrapers.apify import apify
+from src.services.scrapers.facebook import load_facebook_cookies
 
 # Logger setup for this file
 logger = logging.getLogger(__name__)

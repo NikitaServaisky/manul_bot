@@ -1,6 +1,6 @@
 import logging
-from core.security import encrypt_data, decrypt_data
-from core.database.customer_repository import (
+from src.core.security import encrypt_data, decrypt_data
+from src.database.user_repository import (
     add_customer,
     save_or_update_vehicle,
     db_get_customer_by_phone,

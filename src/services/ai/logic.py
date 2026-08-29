@@ -1,6 +1,6 @@
 import logging
 from utils.image_processor import process_image_for_api
-from services.llm_clients import (
+from src.services.ai.llm_clients import (
     call_gemini_25_flash,
     call_gemini_20_flash,
     call_groq_llama,

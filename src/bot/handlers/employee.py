@@ -3,12 +3,12 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, CommandHandler, filters, ContextTypes
 
-from keyboards.inline_keyboards import (
+from src.bot.keyboards.inline import (
     get_employee_area_keyboard, 
     get_employee_vacation_confirm_keyboard,
     get_manager_vacation_approval_keyboard
 )
-from services.employee_service import fetch_employee_schedule, create_vacation_request, log_user_document, save_shift_submission
+from src.services.employee_service import fetch_employee_schedule, create_vacation_request, log_user_document, save_shift_submission
 
 (
     WAITING_VACATION_START,

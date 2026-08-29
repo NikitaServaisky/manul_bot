@@ -1,9 +1,9 @@
 import os
 import requests
 import logging
-from core.database import get_db
-from services.ai_logic import analyze_lead_relevance
-from core.utils import escape_md
+from src.database.user_repository import get_db
+from src.services.ai.logic import analyze_lead_relevance
+from src.utils.helpers import escape_md
 
 # Setup logger for this file
 logger = logging.getLogger(__name__)

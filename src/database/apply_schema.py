@@ -1,6 +1,6 @@
 import logging
-from core.database import get_db
-from core.setup.get_schema_files import get_schema_files
+from src.database.user_repository import get_db
+from src.database.get_schema_files import get_schema_files
 
 # Setup logger for this file
 logger = logging.getLogger(__name__)

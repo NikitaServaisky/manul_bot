@@ -1,5 +1,5 @@
 import os
-from core.database import get_db
+from src.database.user_repository import get_db
 
 def seed_admin_user():
     """Checks if the bootstrap Admin exists in the database. If not, creates them."""

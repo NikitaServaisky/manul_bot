@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler
-from services.employee_service import update_vacation_status
+from src.services.employee_service import update_vacation_status
 
 def get_manager_area_keyboard():
     """Generate the inline keyboard for the manager panel."""

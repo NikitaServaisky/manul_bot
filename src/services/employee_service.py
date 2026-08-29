@@ -1,5 +1,5 @@
 from datetime import date
-from core.database import get_db
+from src.database.user_repository import get_db
 
 def fetch_employee_schedule(user_id: int, start_date: date, end_date: date):
     """
@@ -19,7 +19,7 @@ def fetch_employee_schedule(user_id: int, start_date: date, end_date: date):
             cursor.execute(query, (user_id, start_date, end_date))
             return cursor.fetchall()
 
-from core.database import get_db
+from src.database.user_repository import get_db
 
 def create_vacation_request(user_id: int, req_type: str, start_date, end_date, total_days: float) -> int:
     """Inserts a vacation request into PostgreSQL and returns the generated request ID."""
