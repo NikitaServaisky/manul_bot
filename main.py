@@ -9,7 +9,7 @@ load_dotenv()
 from scripts.init_db import init_db
 from src.bot.keyboards.reply import get_main_menu
 from src.bot.handlers.admin import admin_conv
-from src.bot.handlers.post_handlers import post_conv
+from src.bot.handlers.posts import post_conv
 from src.bot.handlers.vehicle_handlers import vehicle_conv
 
 # Import your targets safely
