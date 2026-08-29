@@ -53,7 +53,7 @@ services:
       - DB_HOST=db
     volumes:
       - .:/app
-    command: ["python", "scripts/hunter.py"]
+    command: python -m src.services.scrapers.hunter
     networks:
       - manul_network
 

@@ -4,6 +4,9 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Set Python path so it can import from src/ and root
+ENV PYTHONPATH=/app
+
 # Install system dependencies (including sqlite3 for debugging)
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -20,5 +23,5 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Command to run the bot
-CMD ["python", "main.py"]
+# Command to run the bot using python module mode
+CMD ["python", "-m", "src.main"]
