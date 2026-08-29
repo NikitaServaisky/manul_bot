@@ -1,5 +1,5 @@
 from telegram.ext import ConversationHandler, MessageHandler, CallbackQueryHandler, CommandHandler, filters
-import handlers.admin_callbacks as cb
+import src.bot.handlers.admin as cb
 
 # Updated Conversation States Matching the Callbacks
 (
